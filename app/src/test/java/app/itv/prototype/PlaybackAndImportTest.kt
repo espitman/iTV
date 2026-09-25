@@ -7,6 +7,7 @@ import app.itv.prototype.core.LibraryEpisode
 import app.itv.prototype.core.MergeSnapshot
 import app.itv.prototype.core.NextCountdown
 import app.itv.prototype.core.PlaybackRules
+import app.itv.prototype.core.SeekBurst
 import app.itv.prototype.data.CatalogMapper
 import org.json.JSONArray
 import org.json.JSONObject
@@ -22,6 +23,18 @@ class PlaybackAndImportTest {
         assertEquals(10_000L, PlaybackRules.dpadSeekStep(0L))
         assertEquals(10_000L, PlaybackRules.dpadSeekStep(2_000L))
         assertEquals(20_000L, PlaybackRules.dpadSeekStep(2_001L))
+    }
+
+    @Test
+    fun heldSeekReportsTotalMovementAndStopsAtTheVideoBoundary() {
+        val start = SeekBurst(22, 1_000L, 60_000L)
+        val held = start.advance(10_000L, 100_000L)
+            .advance(10_000L, 100_000L)
+            .advance(20_000L, 100_000L)
+        assertEquals(40_000L, held.movedMs)
+        assertEquals(100_000L, held.targetMs)
+        assertEquals(40_000L, held.advance(20_000L, 100_000L).movedMs)
+        assertEquals(-15_000L, SeekBurst(21, 2_000L, 15_000L).advance(-20_000L, 100_000L).movedMs)
     }
 
     @Test

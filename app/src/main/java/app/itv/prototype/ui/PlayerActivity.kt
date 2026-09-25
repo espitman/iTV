@@ -32,6 +32,7 @@ import app.itv.prototype.core.LibraryEpisode
 import app.itv.prototype.core.LibrarySeries
 import app.itv.prototype.core.NextCountdown
 import app.itv.prototype.core.PlaybackRules
+import app.itv.prototype.core.SeekBurst
 import app.itv.prototype.core.persianClock
 import app.itv.prototype.core.persianDigits
 import app.itv.prototype.data.TelewebionClient
@@ -97,6 +98,7 @@ class PlayerActivity : Activity() {
     private var nextEpisode: LibraryEpisode? = null
     private var ready = false
     private var controlsVisible = false
+    private var quickSeekBurst: SeekBurst? = null
     private var nextCountdown = NextCountdown()
     private var resumeRemaining = PlaybackRules.RESUME_COUNTDOWN_SEC
     private var lastSaveAt = 0L
@@ -511,6 +513,17 @@ class PlayerActivity : Activity() {
         if (revealControls) showControls() else showSeekFeedback(delta)
     }
 
+    private fun quickSeek(event: KeyEvent, delta: Long) {
+        val exo = player ?: return
+        if (!exo.isCurrentMediaItemSeekable) return
+        val previous = quickSeekBurst?.takeIf { it.keyCode == event.keyCode && it.downTime == event.downTime }
+        val burst = (previous ?: SeekBurst(event.keyCode, event.downTime, exo.currentPosition.coerceAtLeast(0L)))
+            .advance(delta, exo.duration)
+        quickSeekBurst = burst
+        exo.seekTo(burst.targetMs)
+        if (burst.movedMs != 0L) showSeekFeedback(burst.movedMs)
+    }
+
     private fun showSeekFeedback(delta: Long) {
         val showing = if (delta > 0L) seekRightFeedback else seekLeftFeedback
         val other = if (delta > 0L) seekLeftFeedback else seekRightFeedback
@@ -528,6 +541,7 @@ class PlayerActivity : Activity() {
 
     private fun showControls() {
         if (resume.visibility == View.VISIBLE) return
+        quickSeekBurst = null
         controlsVisible = true
         controls.visibility = View.VISIBLE
         if (!speedOpen() && !jumpOpen() && nextCard.visibility != View.VISIBLE && !isControlFocus()) {
@@ -650,6 +664,7 @@ class PlayerActivity : Activity() {
         resume.visibility = View.GONE
         controls.visibility = View.GONE
         controlsVisible = false
+        quickSeekBurst = null
         handler.removeCallbacks(hideSeekFeedback)
         hideSeekFeedback.run()
     }
@@ -659,13 +674,16 @@ class PlayerActivity : Activity() {
             return handleBack()
         }
         val horizontalKey = event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+        val mediaSeekKey = event.keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || event.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD
         val canQuickSeek = ready && overlay.visibility != View.VISIBLE && resume.visibility != View.VISIBLE &&
             !controlsVisible && !speedOpen() && !jumpOpen() &&
-            !(nextCard.visibility == View.VISIBLE && nextLocked(player?.duration ?: 0L, player?.currentPosition ?: 0L))
-        if (horizontalKey && canQuickSeek) {
+            (!horizontalKey || !(nextCard.visibility == View.VISIBLE && nextLocked(player?.duration ?: 0L, player?.currentPosition ?: 0L)))
+        if ((horizontalKey || mediaSeekKey) && canQuickSeek) {
             if (event.action == KeyEvent.ACTION_DOWN) {
-                val step = PlaybackRules.dpadSeekStep(event.eventTime - event.downTime)
-                seekBy(if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) step else -step, revealControls = false)
+                val step = if (horizontalKey) PlaybackRules.dpadSeekStep(event.eventTime - event.downTime) else PlaybackRules.MEDIA_FORWARD_MS
+                quickSeek(event, if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || event.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) step else -step)
+            } else if (event.action == KeyEvent.ACTION_UP && quickSeekBurst?.keyCode == event.keyCode) {
+                quickSeekBurst = null
             }
             return true
         }

@@ -94,6 +94,20 @@ object PlaybackRules {
     }
 }
 
+data class SeekBurst(
+    val keyCode: Int,
+    val downTime: Long,
+    val originMs: Long,
+    val targetMs: Long = originMs,
+) {
+    val movedMs: Long get() = targetMs - originMs
+
+    fun advance(deltaMs: Long, durationMs: Long): SeekBurst {
+        val lastPosition = durationMs.takeIf { it > 0L } ?: Long.MAX_VALUE
+        return copy(targetMs = (targetMs + deltaMs).coerceIn(0L, lastPosition))
+    }
+}
+
 data class NextCountdown(
     val remainingSec: Int = PlaybackRules.NEXT_COUNTDOWN_SEC,
     val started: Boolean = false,
