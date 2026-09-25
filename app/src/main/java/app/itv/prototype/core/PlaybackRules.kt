@@ -4,8 +4,8 @@ object PlaybackRules {
     const val RESUME_THRESHOLD_MS = 10_000L
     const val NEAR_END_RESET_MS = 10_000L
     const val WATCHED_MIN_DURATION_MS = 30_000L
-    const val NEXT_CARD_MS = 5 * 60 * 1000L
-    const val NEXT_LOCK_MS = 30 * 1000L
+    const val NEXT_CARD_MS = 60 * 1000L
+    const val NEXT_LOCK_MS = 10 * 1000L
     const val SAVE_INTERVAL_MS = 18_000L
     const val CONTROLS_HIDE_MS = 8_000L
     const val SEEK_DEBOUNCE_MS = 500L
@@ -99,12 +99,17 @@ data class SeekBurst(
     val downTime: Long,
     val originMs: Long,
     val targetMs: Long = originMs,
+    val lastEventTimeMs: Long = downTime,
 ) {
     val movedMs: Long get() = targetMs - originMs
 
-    fun advance(deltaMs: Long, durationMs: Long): SeekBurst {
+    fun continues(keyCode: Int, eventTimeMs: Long): Boolean =
+        this.keyCode == keyCode && eventTimeMs >= lastEventTimeMs &&
+            eventTimeMs - lastEventTimeMs <= 1_500L
+
+    fun advance(deltaMs: Long, durationMs: Long, eventTimeMs: Long = lastEventTimeMs): SeekBurst {
         val lastPosition = durationMs.takeIf { it > 0L } ?: Long.MAX_VALUE
-        return copy(targetMs = (targetMs + deltaMs).coerceIn(0L, lastPosition))
+        return copy(targetMs = (targetMs + deltaMs).coerceIn(0L, lastPosition), lastEventTimeMs = eventTimeMs)
     }
 }
 

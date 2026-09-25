@@ -38,6 +38,17 @@ class PlaybackAndImportTest {
     }
 
     @Test
+    fun rapidSeparatePressesKeepTheDisplayedSeekTotalUntilTheIndicatorExpires() {
+        val first = SeekBurst(22, 1_000L, 60_000L).advance(10_000L, 200_000L, 1_000L)
+        assertTrue(first.continues(22, 1_300L))
+        val second = first.advance(10_000L, 200_000L, 1_300L)
+        assertEquals(20_000L, second.movedMs)
+        assertTrue(second.continues(22, 2_700L))
+        assertFalse(second.continues(22, 2_801L))
+        assertFalse(second.continues(21, 1_350L))
+    }
+
+    @Test
     fun keepsDuplicateDisplayNumbersAndSourceGaps() {
         val json = JSONArray()
         listOf("۲۶" to "a", "26" to "b", "31" to "c", "31" to "d", "33" to "e").forEach { (title, id) ->
@@ -161,13 +172,14 @@ class PlaybackAndImportTest {
         state = state.reset()
         assertFalse(state.cancelled)
         assertEquals(10, state.remainingSec)
-        assertTrue(PlaybackRules.nextLockActive(true, false, 100_000, 80_000))
-        assertFalse(PlaybackRules.nextLockActive(true, true, 100_000, 80_000))
-        assertFalse(PlaybackRules.nextLockActive(false, false, 100_000, 80_000))
+        assertTrue(PlaybackRules.nextLockActive(true, false, 100_000, 95_000))
+        assertFalse(PlaybackRules.nextLockActive(true, false, 100_000, 80_000))
+        assertFalse(PlaybackRules.nextLockActive(true, true, 100_000, 95_000))
+        assertFalse(PlaybackRules.nextLockActive(false, false, 100_000, 95_000))
     }
 
     @Test
-    fun nextCountdownResetsWhenLeavingTheLastThirtySeconds() {
+    fun nextCountdownResetsWhenLeavingTheLastTenSeconds() {
         var state = NextCountdown().onWindow(true).tick().tick()
         assertEquals(8, state.remainingSec)
         state = state.onWindow(false)

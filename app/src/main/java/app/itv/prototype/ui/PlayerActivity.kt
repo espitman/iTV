@@ -444,7 +444,7 @@ class PlayerActivity : Activity() {
         }
         val remain = (dur - pos).coerceAtLeast(0L)
         val locked = remain < PlaybackRules.NEXT_LOCK_MS
-        val near = remain < PlaybackRules.NEXT_CARD_MS && controlsVisible
+        val near = remain < PlaybackRules.NEXT_CARD_MS
         val previous = nextCountdown
         nextCountdown = nextCountdown.onWindow(locked)
         if (nextCountdown.started && !previous.started) {
@@ -516,9 +516,9 @@ class PlayerActivity : Activity() {
     private fun quickSeek(event: KeyEvent, delta: Long) {
         val exo = player ?: return
         if (!exo.isCurrentMediaItemSeekable) return
-        val previous = quickSeekBurst?.takeIf { it.keyCode == event.keyCode && it.downTime == event.downTime }
+        val previous = quickSeekBurst?.takeIf { it.continues(event.keyCode, event.eventTime) }
         val burst = (previous ?: SeekBurst(event.keyCode, event.downTime, exo.currentPosition.coerceAtLeast(0L)))
-            .advance(delta, exo.duration)
+            .advance(delta, exo.duration, event.eventTime)
         quickSeekBurst = burst
         exo.seekTo(burst.targetMs)
         if (burst.movedMs != 0L) showSeekFeedback(burst.movedMs)
@@ -537,6 +537,7 @@ class PlayerActivity : Activity() {
     private val hideSeekFeedback = Runnable {
         seekLeftFeedback.visibility = View.GONE
         seekRightFeedback.visibility = View.GONE
+        quickSeekBurst = null
     }
 
     private fun showControls() {
@@ -682,8 +683,6 @@ class PlayerActivity : Activity() {
             if (event.action == KeyEvent.ACTION_DOWN) {
                 val step = if (horizontalKey) PlaybackRules.dpadSeekStep(event.eventTime - event.downTime) else PlaybackRules.MEDIA_FORWARD_MS
                 quickSeek(event, if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT || event.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD) step else -step)
-            } else if (event.action == KeyEvent.ACTION_UP && quickSeekBurst?.keyCode == event.keyCode) {
-                quickSeekBurst = null
             }
             return true
         }
