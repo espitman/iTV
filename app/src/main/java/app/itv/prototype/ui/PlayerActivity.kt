@@ -46,11 +46,14 @@ class PlayerActivity : Activity() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var playerView: PlayerView
+    private lateinit var root: View
     private lateinit var overlay: View
     private lateinit var spinner: ProgressBar
     private lateinit var status: TextView
     private lateinit var retry: Button
     private lateinit var controls: View
+    private lateinit var seekLeftFeedback: TextView
+    private lateinit var seekRightFeedback: TextView
     private lateinit var nowTitle: TextView
     private lateinit var nowMeta: TextView
     private lateinit var timeCurrent: TextView
@@ -120,11 +123,16 @@ class PlayerActivity : Activity() {
 
     private fun bindViews() {
         playerView = findViewById(R.id.player)
+        root = findViewById(R.id.root)
+        root.isFocusable = true
+        root.isFocusableInTouchMode = true
         overlay = findViewById(R.id.overlay)
         spinner = findViewById(R.id.spinner)
         status = findViewById(R.id.status)
         retry = findViewById(R.id.retry)
         controls = findViewById(R.id.controls)
+        seekLeftFeedback = findViewById(R.id.seekLeftFeedback)
+        seekRightFeedback = findViewById(R.id.seekRightFeedback)
         nowTitle = findViewById(R.id.nowTitle)
         nowMeta = findViewById(R.id.nowMeta)
         timeCurrent = findViewById(R.id.timeCurrent)
@@ -199,9 +207,6 @@ class PlayerActivity : Activity() {
                 scheduleHide()
             }
         })
-        timeline.setOnFocusChangeListener { _, focused ->
-            if (focused) handler.removeCallbacks(hideRunnable) else scheduleHide()
-        }
         val transport = listOf(btnRestart, btnRewind, btnPlay, btnForward, btnNext, btnQuality, btnSpeed, btnJump)
         transport.forEachIndexed { index, button ->
             button.nextFocusLeftId = transport.getOrNull(index - 1)?.id ?: button.id
@@ -286,9 +291,10 @@ class PlayerActivity : Activity() {
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_BUFFERING && !ready && resume.visibility != View.VISIBLE) showOverlay(loading = true, error = null)
                 if (state == Player.STATE_READY) {
+                    val firstReady = !ready
                     ready = true
                     showOverlay(loading = false, error = null)
-                    if (resume.visibility != View.VISIBLE) showControls()
+                    if (firstReady && resume.visibility != View.VISIBLE) showControls()
                 }
                 if (state == Player.STATE_ENDED) {
                     persistProgress()
@@ -496,11 +502,28 @@ class PlayerActivity : Activity() {
         showControls()
     }
 
-    private fun seekBy(delta: Long) {
+    private fun seekBy(delta: Long, revealControls: Boolean = controlsVisible) {
         val exo = player ?: return
-        val target = (exo.currentPosition + delta).coerceIn(0L, exo.duration.coerceAtLeast(0L))
+        if (!exo.isCurrentMediaItemSeekable) return
+        val upperBound = exo.duration.takeIf { it > 0L } ?: Long.MAX_VALUE
+        val target = (exo.currentPosition + delta).coerceIn(0L, upperBound)
         exo.seekTo(target)
-        showControls()
+        if (revealControls) showControls() else showSeekFeedback(delta)
+    }
+
+    private fun showSeekFeedback(delta: Long) {
+        val showing = if (delta > 0L) seekRightFeedback else seekLeftFeedback
+        val other = if (delta > 0L) seekLeftFeedback else seekRightFeedback
+        other.visibility = View.GONE
+        showing.text = (if (delta > 0L) "+" else "−") + persianDigits(kotlin.math.abs(delta) / 1000L)
+        showing.visibility = View.VISIBLE
+        handler.removeCallbacks(hideSeekFeedback)
+        handler.postDelayed(hideSeekFeedback, 1_500L)
+    }
+
+    private val hideSeekFeedback = Runnable {
+        seekLeftFeedback.visibility = View.GONE
+        seekRightFeedback.visibility = View.GONE
     }
 
     private fun showControls() {
@@ -514,14 +537,15 @@ class PlayerActivity : Activity() {
     }
 
     private fun hideControls() {
-        if (speedOpen() || jumpOpen() || scrubbing || timeline.isFocused || qualityDialog?.isShowing == true) return
+        if (speedOpen() || jumpOpen() || scrubbing || qualityDialog?.isShowing == true) return
+        if (controls.hasFocus()) root.requestFocus()
         controlsVisible = false
         controls.visibility = View.GONE
     }
 
     private fun scheduleHide() {
         handler.removeCallbacks(hideRunnable)
-        if (player?.isPlaying == true && !speedOpen() && !jumpOpen() && !scrubbing && !timeline.isFocused && qualityDialog?.isShowing != true) {
+        if (controlsVisible && !speedOpen() && !jumpOpen() && !scrubbing && qualityDialog?.isShowing != true) {
             handler.postDelayed(hideRunnable, PlaybackRules.CONTROLS_HIDE_MS)
         }
     }
@@ -626,12 +650,26 @@ class PlayerActivity : Activity() {
         resume.visibility = View.GONE
         controls.visibility = View.GONE
         controlsVisible = false
+        handler.removeCallbacks(hideSeekFeedback)
+        hideSeekFeedback.run()
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_BACK) {
             return handleBack()
         }
+        val horizontalKey = event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+        val canQuickSeek = ready && overlay.visibility != View.VISIBLE && resume.visibility != View.VISIBLE &&
+            !controlsVisible && !speedOpen() && !jumpOpen() &&
+            !(nextCard.visibility == View.VISIBLE && nextLocked(player?.duration ?: 0L, player?.currentPosition ?: 0L))
+        if (horizontalKey && canQuickSeek) {
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                val step = PlaybackRules.dpadSeekStep(event.eventTime - event.downTime)
+                seekBy(if (event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) step else -step, revealControls = false)
+            }
+            return true
+        }
+        if (event.action == KeyEvent.ACTION_DOWN && controlsVisible) scheduleHide()
         if (timeline.isFocused && controlsVisible && event.keyCode in listOf(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER)) {
             return super.dispatchKeyEvent(event)
         }
@@ -670,12 +708,7 @@ class PlayerActivity : Activity() {
                         return super.dispatchKeyEvent(event)
                     }
                     if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                        if (!controlsVisible) {
-                            showControls()
-                            timeline.requestFocus()
-                            timeline.onKeyDown(event.keyCode, event)
-                            return true
-                        }
+                        if (!controlsVisible) return true
                     }
                     if (!controlsVisible && (event.keyCode == KeyEvent.KEYCODE_DPAD_UP || event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN)) {
                         showControls()

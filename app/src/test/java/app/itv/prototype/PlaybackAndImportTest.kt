@@ -18,6 +18,13 @@ import org.junit.Test
 
 class PlaybackAndImportTest {
     @Test
+    fun dpadSeekStartsAtTenSecondsAndSpeedsUpWhenHeld() {
+        assertEquals(10_000L, PlaybackRules.dpadSeekStep(0L))
+        assertEquals(10_000L, PlaybackRules.dpadSeekStep(2_000L))
+        assertEquals(20_000L, PlaybackRules.dpadSeekStep(2_001L))
+    }
+
+    @Test
     fun keepsDuplicateDisplayNumbersAndSourceGaps() {
         val json = JSONArray()
         listOf("۲۶" to "a", "26" to "b", "31" to "c", "31" to "d", "33" to "e").forEach { (title, id) ->
