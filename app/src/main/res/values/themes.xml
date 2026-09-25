@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ITV" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:colorAccent">@color/cyan</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:fontFamily">@font/byekan_family</item>
+        <item name="android:textViewStyle">@style/Widget.ITV.TextView</item>
+        <item name="android:buttonStyle">@style/Widget.ITV.Button</item>
+        <item name="android:windowContentTransitions">false</item>
+    </style>
+
+    <style name="Widget.ITV.TextView" parent="@android:style/Widget.Material.TextView">
+        <item name="android:fontFamily">@font/byekan_family</item>
+    </style>
+
+    <style name="Widget.ITV.Button" parent="@android:style/Widget.Material.Button">
+        <item name="android:fontFamily">@font/byekan_family</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

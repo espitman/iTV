@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iTV — کتابخانه</title>
+  <link rel="stylesheet" href="library.css">
+</head>
+<body>
+  <div class="canvas">
+    <header class="topbar">
+      <div class="brand" aria-label="iTV"><span class="brand-mark">i</span><span>TV</span></div>
+      <nav class="main-nav" aria-label="ناوبری اصلی">
+        <a class="nav-item active" href="?screen=home">خانه</a>
+        <a class="nav-item" href="?screen=home">سریال‌های من</a>
+      </nav>
+      <button class="settings" aria-label="تنظیمات"><span class="gear">⚙</span><span>تنظیمات</span></button>
+    </header>
+
+    <main>
+      <section class="screen home-screen" data-screen="home">
+        <section class="hero home-hero">
+          <img class="hero-art" src="assets/divar_wide.jpg" alt="">
+          <div class="hero-shade"></div>
+          <div class="hero-copy">
+            <div class="eyebrow"><span class="eyebrow-dot"></span> تازه به کتابخانه اضافه شده</div>
+            <h1>دیوار دفاعی</h1>
+            <p class="hero-description">قسمت‌های موجود سریال را یک‌جا و مرتب دنبال کنید.</p>
+            <div class="hero-actions">
+              <button class="button primary"><span class="play-icon">▶</span> تماشای سریال</button>
+              <button class="button secondary">جزئیات سریال <span class="arrow">←</span></button>
+            </div>
+          </div>
+          <div class="hero-rail"><span></span><span></span><span class="on"></span></div>
+          <div class="hero-caption"><span class="caption-line"></span> انتخاب امروز iTV</div>
+        </section>
+
+        <section class="library-section">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">کتابخانهٔ شما</div>
+              <h2>سریال‌ها</h2>
+            </div>
+            <div class="sort-label"><span class="sort-icon">↕</span> جدیدترین افزوده‌شده</div>
+          </div>
+          <div class="series-grid">
+            <a class="series-card" href="?screen=series-single">
+              <div class="poster-frame"><img src="assets/divar_poster.jpg" alt="پوستر دیوار دفاعی"><span class="card-play">▶</span><span class="added-tag"><i></i> تازه</span></div>
+              <div class="card-copy"><div><h3>دیوار دفاعی</h3><p>سریال · ۱ فصل</p></div><span class="card-arrow">←</span></div>
+            </a>
+            <a class="series-card" href="?screen=series-multi">
+              <div class="poster-frame"><img src="assets/zir_poster.jpg" alt="پوستر زیرخاکی"><span class="card-play">▶</span></div>
+              <div class="card-copy"><div><h3>زیرخاکی</h3><p>سریال · ۴ فصل</p></div><span class="card-arrow">←</span></div>
+            </a>
+            <a class="series-card" href="?screen=home">
+              <div class="poster-frame"><img src="assets/dokhtaran_poster.jpg" alt="پوستر دختران"><span class="card-play">▶</span></div>
+              <div class="card-copy"><div><h3>دختران</h3><p>سریال</p></div><span class="card-arrow">←</span></div>
+            </a>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen detail-screen single-screen" data-screen="series-single">
+        <div class="detail-hero">
+          <img class="detail-art" src="assets/divar_wide.jpg" alt="">
+          <div class="detail-overlay"></div>
+          <div class="detail-info">
+            <div class="crumb"><a href="?screen=home">خانه</a><span>›</span><span>دیوار دفاعی</span></div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span> سریال</div>
+            <h1>دیوار دفاعی</h1>
+            <p class="detail-description">قسمت‌های موجود سریال، مرتب‌شده در یک فهرست ساده برای تماشا.</p>
+            <div class="detail-meta"><span>۱ فصل</span><b></b><span>۸ قسمت</span></div>
+            <div class="hero-actions">
+              <button class="button primary"><span class="play-icon">▶</span> پخش قسمت اول</button>
+              <a class="button secondary" href="#episodes-list-single">فهرست قسمت‌ها <span class="arrow">↓</span></a>
+            </div>
+          </div>
+          <div class="detail-art-label"><span></span> دیوار دفاعی</div>
+        </div>
+        <section class="episodes-section" id="episodes-list-single">
+          <div class="episode-heading"><div><div class="section-kicker">فصل ۱</div><h2>قسمت‌ها</h2></div><div class="episode-count">۸ قسمت</div></div>
+          <div class="episode-grid">
+            <article class="episode-card focused"><div class="episode-art"><img src="assets/divar_ep1.jpg" alt=""><span class="episode-number">۰۱</span><span class="episode-play">▶</span><span class="progress-track"><i></i></span></div><div class="episode-copy"><h3>قسمت اول</h3><span>شروع تماشا</span></div></article>
+            <article class="episode-card"><div class="episode-art"><img src="assets/divar_ep2.jpg" alt=""><span class="episode-number">۰۲</span><span class="episode-play">▶</span></div><div class="episode-copy"><h3>قسمت دوم</h3><span>برای تماشا</span></div></article>
+            <article class="episode-card"><div class="episode-art"><img src="assets/divar_ep3.jpg" alt=""><span class="episode-number">۰۳</span><span class="episode-play">▶</span></div><div class="episode-copy"><h3>قسمت سوم</h3><span>برای تماشا</span></div></article>
+            <article class="episode-card"><div class="episode-art"><img src="assets/divar_ep4.jpg" alt=""><span class="episode-number">۰۴</span><span class="episode-play">▶</span></div><div class="episode-copy"><h3>قسمت چهارم</h3><span>برای تماشا</span></div></article>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen detail-screen multi-screen" data-screen="series-multi">
+        <div class="detail-hero multi-hero">
+          <img class="detail-art" src="assets/zir_wide.jpg" alt="">
+          <div class="detail-overlay"></div>
+          <div class="detail-info">
+            <div class="crumb"><a href="?screen=home">خانه</a><span>›</span><span>زیرخاکی</span></div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span> سریال چندفصلی</div>
+            <h1>زیرخاکی</h1>
+            <p class="detail-description">چهار فصل سریال، همراه با فهرست قسمت‌های هر فصل.</p>
+            <div class="detail-meta"><span>۴ فصل</span><b></b><span>۶۵ قسمت</span></div>
+            <div class="hero-actions">
+              <button class="button primary"><span class="play-icon">▶</span> ادامهٔ تماشا</button>
+              <a class="button secondary" href="#episodes-list-multi">فهرست قسمت‌ها <span class="arrow">↓</span></a>
+            </div>
+          </div>
+          <div class="detail-art-label"><span></span> زیرخاکی</div>
+        </div>
+        <section class="episodes-section multi-episodes" id="episodes-list-multi">
+          <div class="episode-heading multi-heading"><div><div class="section-kicker">به انتخاب شما</div><h2>فصل‌ها و قسمت‌ها</h2></div>
+            <div class="season-tabs" role="tablist" aria-label="فصل‌ها"><button>فصل ۱</button><button class="selected">فصل ۲</button><button>فصل ۳</button><button>فصل ۴</button></div>
+          </div>
+          <div class="episode-grid">
+            <article class="episode-card focused"><div class="episode-art"><img src="assets/zir_s2_ep1.jpg" alt=""><span class="episode-number">۰۱</span><span class="episode-play">▶</span><span class="progress-track"><i></i></span></div><div class="episode-copy"><h3>قسمت اول</h3><span>ادامهٔ تماشا</span></div></article>
+            <article class="episode-card"><div class="episode-art"><img src="assets/zir_s2_ep2.jpg" alt=""><span class="episode-number">۰۲</span><span class="episode-play">▶</span></div><div class="episode-copy"><h3>قسمت دوم</h3><span>برای تماشا</span></div></article>
+            <article class="episode-card"><div class="episode-art"><img src="assets/zir_s2_ep3.jpg" alt=""><span class="episode-number">۰۳</span><span class="episode-play">▶</span></div><div class="episode-copy"><h3>قسمت سوم</h3><span>برای تماشا</span></div></article>
+            <article class="episode-card"><div class="episode-art"><img src="assets/zir_s2_ep4.jpg" alt=""><span class="episode-number">۰۴</span><span class="episode-play">▶</span></div><div class="episode-copy"><h3>قسمت چهارم</h3><span>برای تماشا</span></div></article>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen empty-screen" data-screen="home-empty">
+        <div class="empty-top"><div class="crumb"><a href="?screen=home">خانه</a><span>›</span><span>سریال‌های من</span></div><div class="section-kicker">کتابخانهٔ شما</div><h1>سریال‌ها</h1></div>
+        <div class="empty-content">
+          <div class="empty-illustration"><div class="empty-orbit orbit-a"></div><div class="empty-orbit orbit-b"></div><div class="empty-screen-icon"><span class="screen-play">▶</span><i></i></div><div class="spark spark-one">✦</div><div class="spark spark-two">✦</div></div>
+          <h2>کتابخانه هنوز خالی است</h2>
+          <p>از پنل iTV یک لینک سریال تلوبیون اضافه کنید؛<br>سریال اینجا برای تماشا آماده می‌شود.</p>
+          <div class="empty-actions"><button class="button primary empty-button"><span class="plus">＋</span> راهنمای افزودن سریال</button><button class="button secondary empty-secondary">نحوهٔ اتصال به پنل</button></div>
+          <div class="empty-hint"><span class="hint-dot"></span> افزودن سریال از پنل وب روی تلویزیون انجام می‌شود</div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    const screen = new URLSearchParams(location.search).get('screen') || 'home';
+    document.querySelectorAll('[data-screen]').forEach(el => el.classList.toggle('visible', el.dataset.screen === screen));
+  </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iTV · پخش‌کننده</title>
+  <link rel="stylesheet" href="player.css">
+</head>
+<body>
+  <main class="player-frame" data-screen="controls" aria-label="پخش‌کنندهٔ iTV">
+    <div class="video-scene" aria-hidden="true"></div>
+    <div class="scene-shade" aria-hidden="true"></div>
+    <div class="video-grain" aria-hidden="true"></div>
+
+    <header class="player-top">
+      <div class="identity">
+        <span class="brand-mark" aria-hidden="true"><span class="brand-play"></span></span>
+        <span class="brand-name">iTV</span>
+        <span class="top-divider"></span>
+        <div class="now-playing">
+          <span class="eyebrow">در حال پخش</span>
+          <strong>دیوار دفاعی</strong>
+        </div>
+      </div>
+      <div class="episode-label"><span>فصل ۱</span><i></i><span>قسمت ۳</span></div>
+    </header>
+
+    <div class="center-state" aria-hidden="true">
+      <span class="play-ring"><span class="play-triangle"></span></span>
+      <span class="center-caption">در حال پخش</span>
+    </div>
+
+    <section class="bottom-dock" aria-label="کنترل‌های پخش">
+      <div class="timeline-heading">
+        <span class="time-current">۰۱:۱۲:۴۸</span>
+        <span class="timeline-title">قسمت سوم · سایه‌ها</span>
+        <span class="time-total">۰۱:۳۸:۲۰</span>
+      </div>
+      <div class="timeline" role="img" aria-label="جایگاه پخش در قسمت">
+        <div class="timeline-track"><span class="timeline-buffer"></span><span class="timeline-progress"></span></div>
+        <span class="timeline-thumb"></span>
+        <span class="timeline-chapter chapter-one"></span><span class="timeline-chapter chapter-two"></span>
+      </div>
+      <div class="control-row">
+        <div class="transport-controls">
+          <button class="control-button" aria-label="قسمت بعد">
+            <svg viewBox="0 0 24 24"><path d="M6 5v14l10-7L6 5Z"/><path d="M19 5v14"/></svg>
+            <span>بعدی</span>
+          </button>
+          <button class="control-button" aria-label="۳۰ ثانیه جلو">
+            <svg viewBox="0 0 24 24"><path d="M19 8V4l-4 4"/><path d="M19 8a8 8 0 1 0 2 5.3"/><text x="12" y="15" text-anchor="middle">۳۰</text></svg>
+            <span>جلو</span>
+          </button>
+          <button class="control-button primary-control" aria-label="توقف موقت">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
+            <span>توقف</span>
+          </button>
+          <button class="control-button" aria-label="۱۰ ثانیه عقب">
+            <svg viewBox="0 0 24 24"><path d="M5 8V4l4 4"/><path d="M5 8a8 8 0 1 1-2 5.3"/><text x="12" y="15" text-anchor="middle">۱۰</text></svg>
+            <span>عقب</span>
+          </button>
+          <button class="control-button" aria-label="شروع از ابتدا">
+            <svg viewBox="0 0 24 24"><path d="M4 8V4m0 0h4M4 4l4 4"/><path d="M5.6 9a7 7 0 1 0 1.1-2"/></svg>
+            <span>از ابتدا</span>
+          </button>
+        </div>
+        <div class="utility-controls">
+          <button class="utility-button" aria-label="سرعت پخش"><span class="speed-glyph">۱×</span><span>سرعت</span></button>
+          <button class="utility-button" aria-label="انتخاب زمان"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/></svg><span>رفتن به زمان</span></button>
+        </div>
+      </div>
+      <div class="remote-hint"><span class="keycap">OK</span><span>انتخاب</span><b></b><span class="keycap arrow-key">←</span><span class="keycap arrow-key">→</span><span>جابه‌جایی ۱۰ ثانیه‌ای</span></div>
+    </section>
+
+    <section class="resume-overlay" aria-label="ادامهٔ تماشا">
+      <div class="resume-dialog">
+        <div class="dialog-kicker"><span class="live-dot"></span> ادامهٔ تماشا</div>
+        <h1>ادامهٔ قسمت سوم؟</h1>
+        <p>آخرین بار تا <b>۰۱:۱۲:۴۸</b> تماشا کردی.</p>
+        <div class="resume-actions">
+          <button class="action-primary"><span class="play-mini"></span>ادامهٔ پخش <em>۵</em></button>
+          <button class="action-secondary"><svg viewBox="0 0 24 24"><path d="M4 8V4m0 0h4M4 4l4 4"/><path d="M5.6 9a7 7 0 1 0 1.1-2"/></svg>شروع از ابتدا</button>
+        </div>
+        <div class="dialog-footer"><span>با دکمهٔ بازگشت می‌توانی انتخاب کنی</span><span>فصل ۱ <i></i> قسمت ۳</span></div>
+      </div>
+    </section>
+
+    <div class="skip-chip" role="status">
+      <span class="skip-icon"><svg viewBox="0 0 24 24"><path d="M5 5v14l10-7L5 5Z"/><path d="M18 5v14"/></svg></span>
+      <span class="skip-copy"><strong>تیتراژ آغازین</strong><small>از این بخش عبور کن</small></span>
+      <span class="skip-key">OK</span>
+    </div>
+
+    <section class="next-overlay" aria-label="قسمت بعدی">
+      <aside class="next-card">
+        <div class="next-head"><span class="next-label"><span class="live-dot"></span> قسمت بعدی</span><span class="next-count">پخش خودکار در <b>۱۰</b></span></div>
+        <div class="next-body">
+          <div class="next-art" aria-hidden="true"><img src="assets/divar_ep4.jpg" alt=""><span class="next-play"><span class="play-triangle"></span></span></div>
+          <div class="next-copy"><span class="next-season">دیوار دفاعی</span><h2>قسمت ۴</h2><p>قسمت بعدی این سریال آمادهٔ پخش است.</p><div class="next-meta"><span class="quality-dot"></span> آمادهٔ پخش</div></div>
+        </div>
+        <div class="next-actions"><button class="next-play-action"><span class="play-mini"></span>پخش قسمت بعد</button><button class="next-cancel-action">لغو</button></div>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const allowed = ['controls', 'resume', 'skip', 'next'];
+    const requested = new URLSearchParams(location.search).get('screen') || 'controls';
+    const screen = allowed.includes(requested) ? requested : 'controls';
+    document.querySelector('.player-frame').dataset.screen = screen;
+  </script>
+</body>
+</html>

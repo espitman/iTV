@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iTV — پنل مدیریت</title>
+  <style>
+    @font-face{font-family:BYekan;src:url('/fonts/regular.ttf') format('truetype');font-weight:400;font-display:swap}
+    @font-face{font-family:BYekan;src:url('/fonts/bold.ttf') format('truetype');font-weight:700;font-display:swap}
+    :root{--bg:#080f13;--surface:#10191e;--card:#14242a;--cyan:#20dce6;--text:#f3fbfc;--muted:#91a2aa;--error:#ffaaa2}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 BYekan,Tahoma,sans-serif;min-height:100vh}button,input{font:inherit}button,a,input{-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+    .layout{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}.layout.unpaired{grid-template-columns:minmax(0,1fr)}aside{padding:32px 20px 20px;background:#0d1519;display:flex;flex-direction:column;gap:12px;border-inline-end:1px solid #26343b;position:sticky;top:0;height:100vh}.brand{font:700 25px/1.2 BYekan,sans-serif;direction:ltr;text-align:left;margin-bottom:8px;display:flex;align-items:center;gap:5px}.brand b{display:inline-grid;place-items:center;background:var(--cyan);color:#071218;width:32px;height:32px;border-radius:9px}.brand+div{color:var(--muted);font-size:11px;margin-bottom:22px}.side-link{color:var(--muted);text-decoration:none;padding:12px 16px;border:1px solid transparent;border-radius:9px;font-weight:bold}.side-link.on,.side-link:hover{background:#122a2e;border-color:#15464b;color:var(--text)}.side-link span{color:var(--cyan);margin-left:12px}.connection{margin-top:auto;border:1px solid #293c43;border-radius:12px;padding:14px;font-size:12px}.connection b{display:block}.connection small{font-size:10px}.dot{color:#5dddac;margin-left:6px}.aside-foot{font-size:10px;color:var(--muted)}
+    main{min-width:0;padding:0 34px 24px}.topbar{height:64px;border-bottom:1px solid #26343b;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);margin:0 -34px 24px;padding:0 34px}.page-heading{display:flex;align-items:center;justify-content:space-between;margin:24px 0 14px}.page-heading p{font-size:12px;margin:4px 0}.eyebrow{color:var(--muted);font-size:11px;margin-bottom:4px}.eyebrow:before{content:'•';color:var(--cyan);margin-left:8px}h1{margin:0;font-size:28px;line-height:1.4}h2{font-size:20px;margin:0 0 10px}h1,h2,p{overflow-wrap:anywhere}p{margin:8px 0 16px}p,small{color:var(--muted)}small{font-size:12px}.count{padding:12px 18px;border:1px solid #283a42;border-radius:10px;white-space:nowrap;font-size:11px;color:var(--muted)}.count b{font-size:25px;color:var(--cyan);margin-left:8px}.panel{min-width:0;background:var(--surface);border:1px solid #2a3d46;border-radius:14px;padding:20px;margin:14px 0}.panel p{font-size:13px}#add{background:linear-gradient(110deg,#132027,#10191e)}
+    label{display:block;margin-bottom:8px;color:var(--muted)}input{display:block;min-width:0;width:100%;background:#0a1216;border:1px solid #344c57;color:var(--text);border-radius:8px;padding:10px 13px;font-size:14px;min-height:44px}.row{display:flex;gap:10px;align-items:center}.row input{flex:1}.row button{flex-shrink:0}button{min-height:36px;background:#172329;color:var(--text);border:1px solid #344a55;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer;white-space:normal}button.primary{background:var(--cyan);color:#06202a;border-color:var(--cyan)}button.danger{border-color:#614346;color:var(--error)}button:disabled{opacity:.5;cursor:wait}.row button{min-height:44px}.hint{font-size:11px!important;margin:10px 0 0}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{text-align:right;padding:12px 8px;border-bottom:1px solid #24363f;overflow-wrap:anywhere;vertical-align:middle}th{color:var(--muted);font-weight:400;font-size:11px;background:#162128}th:first-child{width:30%}th:last-child{width:18%}th:nth-child(3){width:20%}.actions{display:flex;gap:7px}.actions button{display:grid;place-items:center;min-height:32px;width:32px;padding:6px;flex-shrink:0}.actions svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7}.source{font:11px/1.8 sans-serif;direction:ltr;text-align:right}.library-title{display:flex;gap:10px;align-items:center}.library-title img{width:38px;height:50px;object-fit:cover;border-radius:4px}.library-title strong{font-size:16px}.library-title small{font-size:10px}.table-footer{font-size:10px;color:var(--muted);padding-top:12px;display:flex;justify-content:space-between}.error{color:var(--error)}.ok{color:#8cddbf}.hidden{display:none!important}.preview{display:flex;gap:22px;align-items:center;margin-top:18px;padding-top:18px;border-top:1px solid #29424f}.preview>div{min-width:0;overflow-wrap:anywhere}.preview img{flex:none;width:200px;height:130px;object-fit:cover;border-radius:9px;background:#091722}.preview strong{display:block;font-size:24px;margin:5px 0}.preview .preview-meta{font-size:12px;color:var(--muted);margin-top:10px}.pin-box{display:flex}.pin-box input{width:180px;max-width:100%;text-align:center;direction:ltr;font-size:28px;letter-spacing:8px}#pair-card{max-width:480px;margin:80px auto}#pair-btn{width:180px;max-width:100%}#pair-msg,#add-msg{overflow-wrap:anywhere}#pair-msg:empty,#add-msg:empty{display:none}.empty-cell{color:var(--muted)}
+    @media(max-width:1100px){.layout{grid-template-columns:195px minmax(0,1fr)}main{padding:0 22px 24px}.topbar{margin-inline:-22px;padding-inline:22px}.row{flex-wrap:wrap}.row input{flex-basis:100%}.count{padding:10px}th:last-child{width:24%}.preview img{width:130px;height:100px}}
+    @media(max-width:800px){body{font-size:15px}.layout{display:block}aside{position:static;height:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;padding:16px;border-inline-end:0;border-bottom:1px solid #29414b}.brand{margin:0}.brand+div{margin:0;text-align:left;align-self:center;font-size:11px}.side-link{text-align:center;padding:10px 6px;font-size:13px}.connection,.aside-foot{display:none}main{padding:0 16px 24px}.topbar{height:44px;margin:0 -16px 20px;padding:0 16px;font-size:10px}.page-heading{gap:10px;align-items:flex-start}h1{font-size:25px}h2{font-size:19px}.count{font-size:9px;padding:6px 8px}.count b{display:block;font-size:20px}.panel{padding:16px;margin:14px 0;border-radius:12px}.row{display:grid;grid-template-columns:1fr 1fr}.row input{grid-column:1/-1}.row button{padding:8px 5px;font-size:13px}.preview{gap:12px;align-items:flex-start}.preview img{width:82px;height:108px}.preview strong{font-size:20px}.preview .preview-meta{font-size:11px}table,tbody{display:block;width:100%}thead{display:none}tr{display:grid;grid-template-columns:minmax(0,1fr);border:1px solid #293b43;background:#101c22;border-radius:10px;padding:12px;margin-top:12px}td{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;border:0;padding:6px 0;min-width:0;font-size:13px}td:before{content:attr(data-label);color:var(--muted);font:12px/1.8 BYekan,sans-serif}td:first-child{display:block;margin-bottom:6px}td:first-child:before{display:none}td:last-child{display:block;padding-top:10px;margin-top:6px;border-top:1px solid #29424f}td:last-child:before{display:none}.actions{justify-content:flex-end}.actions button{width:40px;min-height:40px}.source{font-size:11px;direction:rtl}.source span{direction:ltr;unicode-bidi:isolate;text-align:right}.empty-cell{display:block}#pair-card{margin:24px auto}.table-footer{gap:10px}.table-footer span{max-width:65%}}
+    .top-actions{display:flex;align-items:center;gap:12px}.top-actions button{min-height:30px;padding:3px 10px;font-size:11px}
+    .pin-box{direction:ltr;justify-content:center;gap:10px}.pin-box input{width:clamp(42px,12vw,58px);height:60px;min-height:60px;padding:4px;letter-spacing:0}#pair-btn{display:block;margin-inline:auto;margin-block-start:14px}
+    @media(max-width:800px){.top-actions span{display:none}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  </style>
+</head>
+<body>
+  <div class="layout unpaired">
+    <aside class="hidden">
+      <div class="brand"><b>i</b>TV</div>
+      <div>پنل مدیریت تلویزیون</div>
+      <a class="side-link on" href="#library"><span>▦</span>کتابخانه</a>
+      <a class="side-link" href="#add"><span>＋</span>افزودن فیلم یا سریال</a>
+      <div class="connection"><b id="connection-state"><span class="dot">●</span>آمادهٔ اتصال به تلویزیون</b><small>iTV · شبکهٔ محلی</small></div><div class="aside-foot">iTV · پنل محلی</div>
+    </aside>
+    <main>
+      <header class="topbar"><span>iTV ‹ مدیریت کتابخانه</span><div class="top-actions"><span><i class="dot">●</i> اتصال محلی به تلویزیون</span><button id="logout-btn" class="hidden" type="button">خروج</button></div></header>
+      <section id="pair-card" class="panel">
+        <h1>ورود امن</h1>
+        <p>کد چهاررقمی روی تنظیمات تلویزیون را وارد کنید.</p>
+        <div class="pin-box" role="group" aria-label="کد چهاررقمی اتصال">
+          <input class="pin-digit" aria-label="رقم اول" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+          <input class="pin-digit" aria-label="رقم دوم" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input class="pin-digit" aria-label="رقم سوم" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input class="pin-digit" aria-label="رقم چهارم" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+        <p><button class="primary" id="pair-btn" type="button">اتصال</button></p>
+        <p id="pair-msg" class="error" role="alert"></p>
+      </section>
+
+      <section id="app" class="hidden">
+        <div class="page-heading">
+          <div><div class="eyebrow">کتابخانهٔ تلویزیون</div><h1>کتابخانه</h1><p>فیلم و سریال را اضافه و کتابخانهٔ iTV را مدیریت کنید.</p></div><div class="count"><b id="library-count">۰</b>عنوان در کتابخانه</div>
+        </div>
+
+        <section class="panel" id="add">
+          <h2>افزودن فیلم یا سریال از تلوبیون</h2>
+          <p>لینک صفحهٔ فیلم یا سریال را وارد کنید؛ اطلاعات و قسمت‌ها خودکار پیدا می‌شوند.</p>
+          <div class="row">
+            <input aria-label="نشانی تلوبیون" id="url" dir="ltr" placeholder="https://telewebion.net/product/0x...">
+            <button id="preview-btn" type="button">پیش‌نمایش</button>
+            <button class="primary" id="add-btn" type="button">＋ افزودن به کتابخانه</button>
+          </div>
+          <p id="add-msg"></p>
+          <div id="preview" class="preview hidden"></div>
+        </section>
+
+        <section class="panel" id="library">
+          <h2>کتابخانه</h2>
+          <table>
+            <thead><tr><th>سریال</th><th>ساختار</th><th>منبع</th><th>وضعیت</th><th>مدیریت</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table><div class="table-footer"><span><i class="dot">●</i> کتابخانه با همین تلویزیون همگام است</span><span id="table-count"></span></div>
+        </section>
+      </section>
+    </main>
+  </div>
+  <script>
+    const tokenKey = "itv-token";
+    let token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey) || "";
+    if (token) localStorage.setItem(tokenKey, token);
+    sessionStorage.removeItem(tokenKey);
+    let lastUrl = "";
+
+    const $ = (id) => document.getElementById(id);
+    const digits = (value) => String(value ?? "").replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+    const asciiDigits = (value) => String(value ?? "")
+      .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+      .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
+      .replace(/\D/g, "");
+    const pinInputs = Array.from(document.querySelectorAll(".pin-digit"));
+
+    function fillPin(value, start = 0) {
+      const chars = asciiDigits(value).slice(0, pinInputs.length - start);
+      [...chars].forEach((char, offset) => { pinInputs[start + offset].value = char; });
+      pinInputs[Math.min(start + chars.length, pinInputs.length - 1)].focus();
+    }
+
+    pinInputs.forEach((input, index) => {
+      input.addEventListener("input", () => {
+        const value = asciiDigits(input.value);
+        input.value = value.slice(0, 1);
+        if (value.length > 1) fillPin(value.slice(1), index + 1);
+        else if (value && index < pinInputs.length - 1) pinInputs[index + 1].focus();
+      });
+      input.addEventListener("paste", e => {
+        e.preventDefault();
+        fillPin(e.clipboardData.getData("text"), index);
+      });
+      input.addEventListener("keydown", e => {
+        if (e.key === "Backspace" && !input.value && index > 0) {
+          pinInputs[index - 1].value = "";
+          pinInputs[index - 1].focus();
+        }
+        if (e.key === "ArrowLeft" && index > 0) pinInputs[index - 1].focus();
+        if (e.key === "ArrowRight" && index < pinInputs.length - 1) pinInputs[index + 1].focus();
+        if (e.key === "Enter") $("pair-btn").click();
+      });
+    });
+
+    async function api(path, options = {}) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+      if (token) headers["X-ITV-Token"] = token;
+      const res = await fetch(path, Object.assign({}, options, { headers }));
+      const text = await res.text();
+      let body = {};
+      try { body = text ? JSON.parse(text) : {}; } catch (e) { body = { error: text }; }
+      if (!res.ok) {
+        const err = new Error(body.error || "خطای درخواست");
+        err.status = res.status;
+        throw err;
+      }
+      return body;
+    }
+
+    function showPaired(ready) {
+      document.querySelector(".layout").classList.toggle("unpaired", !ready);
+      document.querySelector("aside").classList.toggle("hidden", !ready);
+      $("pair-card").classList.toggle("hidden", ready);
+      $("app").classList.toggle("hidden", !ready);
+      $("logout-btn").classList.toggle("hidden", !ready);
+      $("connection-state").textContent = ready ? "● تلویزیون متصل است" : "آمادهٔ اتصال به تلویزیون";
+    }
+
+    function clearAuth() {
+      token = "";
+      localStorage.removeItem(tokenKey);
+      sessionStorage.removeItem(tokenKey);
+      pinInputs.forEach(input => { input.value = ""; });
+      showPaired(false);
+    }
+
+    async function refreshList() {
+      const data = await api("/api/series");
+      const rows = $("rows");
+      $("library-count").textContent = digits((data.items || []).length);
+      $("table-count").textContent = "نمایش " + digits((data.items || []).length) + " عنوان";
+      rows.innerHTML = "";
+      (data.items || []).forEach((item) => {
+        const tr = document.createElement("tr");
+        const seasons = item.seasonCount != null ? digits(item.seasonCount) + " فصل" : "—";
+        const episodes = item.episodeCount != null ? digits(item.episodeCount) + " قسمت" : "—";
+        tr.innerHTML = `
+          <td data-label="عنوان"><div class="library-title">${item.posterUrl ? `<img src="${escapeHtml(item.posterUrl)}" alt="">` : ""}<div><strong>${escapeHtml(item.title)}</strong><br><small>${item.isMovie ? "فیلم سینمایی" : "سریال تلوبیون"}</small></div></div></td>
+          <td data-label="ساختار"><span>${item.isMovie ? "فیلم سینمایی · " + digits(item.durationMinutes) + " دقیقه" : seasons + " · " + episodes}</span></td>
+          <td class="source" data-label="منبع"><span>${escapeHtml(item.kind)} / ${escapeHtml(item.sourceId)}</span></td>
+          <td data-label="وضعیت"><span>${escapeHtml(stateLabel(item))}</span></td>
+          <td data-label="مدیریت"><div class="actions">
+            <button data-act="refresh" data-id="${item.id}" aria-label="نوسازی" title="نوسازی"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 12M4 12l2.3 6A7 7 0 0 0 18 17"/></svg></button>
+            <button data-act="rename" data-id="${item.id}" aria-label="تغییر نام" title="تغییر نام"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 11-11 4 4-11 11-5 1zM13 7l4 4"/></svg></button>
+            <button class="danger" data-act="delete" data-id="${item.id}" aria-label="حذف" title="حذف"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 10v8M14 10v8"/></svg></button>
+          </div></td>`;
+        rows.appendChild(tr);
+      });
+      if (!(data.items || []).length) {
+        rows.innerHTML = "<tr><td class='empty-cell' colspan='5'>کتابخانه خالی است.</td></tr>";
+      }
+    }
+
+    function stateLabel(item) {
+      if (item.importState === "RUNNING") return "در حال ورود…";
+      if (item.importState === "QUEUED") return "در صف";
+      if (item.importState === "ERROR") return item.importError || "خطا";
+      return "آماده";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[ch]));
+    }
+
+    $("pair-btn").onclick = async () => {
+      $("pair-msg").textContent = "";
+      const pin = pinInputs.map(input => asciiDigits(input.value)).join("");
+      if (pin.length !== 4) {
+        $("pair-msg").textContent = "کد چهاررقمی را کامل وارد کنید.";
+        pinInputs.find(input => !input.value)?.focus();
+        return;
+      }
+      try {
+        const data = await api("/api/pair", { method: "POST", body: JSON.stringify({ pin }) });
+        token = data.token;
+        localStorage.setItem(tokenKey, token);
+        showPaired(true);
+        await refreshList();
+      } catch (e) {
+        $("pair-msg").textContent = e.message;
+      }
+    };
+
+    $("logout-btn").onclick = async () => {
+      try {
+        await api("/api/logout", { method: "POST" });
+        clearAuth();
+      } catch (e) {
+        if (e.status === 401) clearAuth();
+        else alert(e.message);
+      }
+    };
+
+    $("preview-btn").onclick = async () => {
+      $("add-msg").textContent = "";
+      lastUrl = $("url").value;
+      try {
+        const data = await api("/api/preview", { method: "POST", body: JSON.stringify({ url: lastUrl }) });
+        $("preview").classList.remove("hidden");
+        $("preview").innerHTML = `
+          ${data.posterUrl ? `<img src="${escapeHtml(data.posterUrl)}" alt="">` : ""}
+          <div>
+            <strong>${escapeHtml(data.title)}</strong>
+            <div class="preview-meta">${escapeHtml(data.description || data.kindLabel)}</div>
+            <div>${data.isMovie ? digits(data.durationMinutes) + " دقیقه" : data.seasonCount != null ? digits(data.seasonCount) + " فصل" : ""}</div>
+          </div>`;
+        $("add-msg").className = "ok";
+        $("add-msg").textContent = "پیش‌نمایش آماده است";
+      } catch (e) {
+        $("add-msg").className = "error";
+        $("add-msg").textContent = e.message;
+      }
+    };
+
+    $("add-btn").onclick = async () => {
+      $("add-msg").textContent = "";
+      try {
+        await api("/api/series", { method: "POST", body: JSON.stringify({ url: $("url").value || lastUrl }) });
+        $("add-msg").className = "ok";
+        $("add-msg").textContent = "به صف ورود اضافه شد";
+        await refreshList();
+      } catch (e) {
+        $("add-msg").className = "error";
+        $("add-msg").textContent = e.message;
+      }
+    };
+
+    $("rows").onclick = async (event) => {
+      const btn = event.target.closest("button");
+      if (!btn) return;
+      const id = btn.getAttribute("data-id");
+      const act = btn.getAttribute("data-act");
+      try {
+        if (act === "refresh") {
+          await api("/api/series/" + id + "/refresh", { method: "POST" });
+        } else if (act === "delete") {
+          if (!confirm("حذف این عنوان از کتابخانه؟")) return;
+          await api("/api/series/" + id, { method: "DELETE" });
+        } else if (act === "rename") {
+          const name = prompt("نام نمایشی محلی");
+          if (name == null) return;
+          await api("/api/series/" + id, { method: "PATCH", body: JSON.stringify({ localTitle: name }) });
+        }
+        await refreshList();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+
+    (async () => {
+      if (!token) { showPaired(false); return; }
+      showPaired(true);
+      try {
+        await refreshList();
+      } catch (e) {
+        if (e.status === 401) clearAuth();
+        else $("connection-state").textContent = "● تلویزیون در دسترس نیست";
+      }
+    })();
+    setInterval(() => {
+      if (token) refreshList().then(() => showPaired(true)).catch(e => {
+        if (e.status === 401) clearAuth();
+        else $("connection-state").textContent = "● تلویزیون در دسترس نیست";
+      });
+    }, 4000);
+  </script>
+</body>
+</html>

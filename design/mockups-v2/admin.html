@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iTV — پنل مدیریت</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="screen tv-settings" data-screen="tv-settings">
+    <header class="tv-header">
+      <div class="brand"><span class="brand-symbol">i</span><span>TV</span></div>
+      <div class="header-divider"></div>
+      <div class="header-context"><span class="context-label">تنظیمات برنامه</span><strong>پنل مدیریت محلی</strong></div>
+      <div class="connection-state"><i></i> سرویس فعال</div>
+    </header>
+
+    <section class="tv-content">
+      <div class="tv-intro">
+        <div class="section-tag"><span></span> مدیریت کتابخانه</div>
+        <h1>مدیریت iTV از موبایل یا رایانه</h1>
+        <p>برای افزودن سریال، نشانی پنل را در مرورگر دستگاهی که به همین شبکه وصل است باز کنید.</p>
+      </div>
+
+      <div class="connection-card">
+        <div class="connection-card-head">
+          <div class="connection-icon"><span class="wifi-glyph">⌁</span></div>
+          <div><span class="field-label">نشانی پنل در شبکهٔ محلی</span><span class="field-hint">این نشانی را در مرورگر همان شبکه وارد کنید</span></div>
+          <span class="live-pill"><i></i> آمادهٔ اتصال</span>
+        </div>
+        <div class="url-box" dir="ltr"><span class="url-lock">↗</span><strong>http://192.168.1.42:8191</strong><span class="copy-affordance">کپی نشانی</span></div>
+        <div class="card-bottom"><span class="network-mark"><i></i><i></i><i></i></span><span>تلویزیون و دستگاه همراه باید به یک شبکهٔ Wi-Fi متصل باشند.</span></div>
+      </div>
+
+      <div class="tv-lower-grid">
+        <section class="pin-card">
+          <div class="pin-copy"><div class="section-tag"><span></span> ورود امن</div><h2>کد اتصال</h2><p>این کد را در صفحهٔ پنل وارد کنید.</p></div>
+          <div class="pin-display" aria-label="کد اتصال ۱۲۴۷"><span>۱</span><span>۲</span><span>۴</span><span>۷</span></div>
+          <div class="pin-foot"><span class="pin-dot"></span> این کد نمونهٔ نمایشی است</div>
+        </section>
+        <section class="steps-card">
+          <div class="section-tag"><span></span> شروع سریع</div>
+          <div class="steps-list">
+            <div class="step"><span class="step-number">۱</span><div><strong>مرورگر را باز کنید</strong><small>در موبایل یا رایانهٔ متصل به شبکه</small></div></div>
+            <div class="step"><span class="step-number">۲</span><div><strong>نشانی بالا را وارد کنید</strong><small>پنل فقط هنگام باز بودن iTV فعال است</small></div></div>
+            <div class="step"><span class="step-number">۳</span><div><strong>کد اتصال را وارد کنید</strong><small>سپس لینک سریال را به کتابخانه بیفزایید</small></div></div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="tv-footer"><span class="footer-brand"><b></b> iTV</span><span>پنل وب روی تلویزیون اجرا می‌شود</span><span class="footer-key">بازگشت <kbd>⟵</kbd></span></footer>
+    </section>
+    <div class="screen-glow"></div>
+  </main>
+
+  <main class="screen web-dashboard" data-screen="web-dashboard">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-symbol">i</span><span>TV</span></div>
+      <div class="sidebar-caption">پنل مدیریت تلویزیون</div>
+      <nav class="side-nav" aria-label="ناوبری پنل">
+        <a class="side-link selected" href="#library"><span class="nav-icon grid-icon">▦</span> کتابخانه</a>
+        <a class="side-link" href="#add"><span class="nav-icon plus-icon">＋</span> افزودن سریال</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="tv-online"><span class="online-ring"><i></i></span><span><strong>تلویزیون متصل است</strong><small>iTV · شبکهٔ محلی</small></span></div>
+        <div class="sidebar-version">iTV <span>پنل محلی</span></div>
+      </div>
+    </aside>
+
+    <div class="dashboard-main">
+      <header class="web-topbar"><div class="breadcrumbs"><span>iTV</span><b>›</b><strong>مدیریت کتابخانه</strong></div><div class="topbar-status"><i></i> اتصال امن به تلویزیون <span class="avatar">ا</span></div></header>
+      <div class="dashboard-content">
+        <div class="page-heading"><div><span class="section-tag"><span></span> کتابخانهٔ تلویزیون</span><h1>سریال‌های من</h1><p>سریال‌ها را اضافه و کتابخانهٔ iTV را مدیریت کنید.</p></div><div class="library-counter"><strong>۰۳</strong><span>سریال در کتابخانه</span></div></div>
+
+        <section class="add-panel" id="add">
+          <div class="add-panel-top"><div><div class="add-title-row"><span class="add-icon">＋</span><h2>افزودن سریال از تلوبیون</h2></div><p>لینک صفحهٔ سریال را وارد کنید؛ اطلاعات و فصل‌ها خودکار پیدا می‌شوند.</p></div><span class="source-badge"><span class="source-dot"></span> telewebion.net</span></div>
+          <div class="url-entry-row"><label class="url-field"><span class="url-prefix" dir="ltr">https://</span><input aria-label="لینک سریال تلوبیون" readonly value="telewebion.net/product/0xc83b6d3"><span class="field-ready"><i></i> لینک معتبر</span></label><button class="add-button"><span>＋</span> افزودن به کتابخانه</button></div>
+          <div class="url-helper"><span>ⓘ</span> لینک صفحهٔ سریال یا محصول را وارد کنید؛ شناسه و نوع صفحه به‌صورت خودکار تشخیص داده می‌شود.</div>
+        </section>
+
+        <section class="preview-panel">
+          <div class="preview-art"><img src="assets/divar_wide.jpg" alt="تصویر سریال دیوار دفاعی"><span class="preview-shade"></span><span class="preview-chip"><i></i> پیش‌نمایش اطلاعات</span></div>
+          <div class="preview-details"><div class="preview-overline"><span class="section-tag"><span></span> سریال شناسایی‌شده</span><span class="type-badge">product</span></div><h2>دیوار دفاعی</h2><p>روایتی از ایستادگی و پیوندهایی که در سخت‌ترین روزها شکل می‌گیرند.</p><div class="preview-meta"><span><b>۱</b> فصل</span><i></i><span><b>۸</b> قسمت</span><i></i><span class="meta-check"><b>✓</b> آمادهٔ افزودن</span></div></div>
+          <div class="preview-action"><span>اطلاعات از تلوبیون دریافت شد</span><button class="refresh-button" aria-label="دریافت دوبارهٔ اطلاعات">↻</button></div>
+        </section>
+
+        <section class="library-panel" id="library">
+          <div class="library-head"><div><h2>کتابخانه</h2><p>سریال‌های ذخیره‌شده روی این تلویزیون</p></div><button class="refresh-all"><span>↻</span> به‌روزرسانی همه</button></div>
+          <div class="library-table-wrap">
+            <table class="library-table">
+              <thead><tr><th>سریال</th><th>ساختار</th><th>منبع</th><th class="actions-heading">مدیریت</th></tr></thead>
+              <tbody>
+                <tr><td><div class="series-cell"><img src="assets/divar_poster.jpg" alt=""><div><strong>دیوار دفاعی</strong><small>سریال تلوبیون</small></div></div></td><td><span class="structure">۱ فصل <i></i> ۸ قسمت</span></td><td><span class="source-path" dir="ltr">product / 0xc83b6d3</span></td><td><div class="row-actions"><button class="icon-action" aria-label="به‌روزرسانی دیوار دفاعی">↻</button><button class="icon-action" aria-label="ویرایش دیوار دفاعی">✎</button><button class="icon-action danger" aria-label="حذف دیوار دفاعی">⌫</button></div></td></tr>
+                <tr><td><div class="series-cell"><img src="assets/zir_poster.jpg" alt=""><div><strong>زیرخاکی</strong><small>سریال تلوبیون</small></div></div></td><td><span class="structure">۴ فصل <i></i> ۶۵ قسمت</span></td><td><span class="source-path" dir="ltr">product / 0xc20bf81</span></td><td><div class="row-actions"><button class="icon-action" aria-label="به‌روزرسانی زیرخاکی">↻</button><button class="icon-action" aria-label="ویرایش زیرخاکی">✎</button><button class="icon-action danger" aria-label="حذف زیرخاکی">⌫</button></div></td></tr>
+                <tr><td><div class="series-cell"><img src="assets/dokhtaran_poster.jpg" alt=""><div><strong>دختران</strong><small>سریال تلوبیون</small></div></div></td><td><span class="structure">۱ فصل <i></i> ۲۳ قسمت</span></td><td><span class="source-path" dir="ltr">program / 0x296b3ea</span></td><td><div class="row-actions"><button class="icon-action" aria-label="به‌روزرسانی دختران">↻</button><button class="icon-action" aria-label="ویرایش دختران">✎</button><button class="icon-action danger" aria-label="حذف دختران">⌫</button></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="library-foot"><span><i></i> کتابخانه با تلویزیون همگام است</span><span>نمایش ۳ سریال</span></div>
+        </section>
+      </div>
+      <div class="web-toast"><span>✓</span><div><strong>تلویزیون در دسترس است</strong><small>پنل محلی iTV</small></div></div>
+    </div>
+  </main>
+
+  <script>
+    const screen = new URLSearchParams(location.search).get('screen') || 'tv-settings';
+    document.querySelectorAll('[data-screen]').forEach((el) => el.classList.toggle('visible', el.dataset.screen === screen));
+  </script>
+</body>
+</html>
