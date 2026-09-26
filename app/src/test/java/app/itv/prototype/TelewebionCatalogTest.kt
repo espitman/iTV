@@ -1,6 +1,7 @@
 package app.itv.prototype
 
 import app.itv.prototype.core.CatalogPaging
+import app.itv.prototype.core.AllowedSource
 import app.itv.prototype.core.SourceKind
 import app.itv.prototype.data.CatalogMapper
 import app.itv.prototype.data.TelewebionClient
@@ -13,6 +14,40 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TelewebionCatalogTest {
+    @Test
+    fun episodeProductLinkResolvesItsParentSeriesAndLoadsEpisodes() {
+        val childId = "0xc59ce14"
+        val parentId = "0xc594990"
+        val requested = mutableListOf<String>()
+        val child = JSONObject().put("content_id", childId)
+            .put("content_type", "SERIALPARTS")
+            .put("season", 1)
+            .put("serial", JSONObject().put("content_id", parentId))
+        val parent = JSONObject().put("content_id", parentId)
+            .put("content_type", "SERIAL")
+            .put("persian_title", "بسوی افتخار")
+            .put("sorted_seasons", JSONArray().put(1))
+        val client = TelewebionClient(getJson = { url ->
+            requested += url
+            when {
+                url.contains("get-content?content_id=$childId") -> productContentRoot(child)
+                url.contains("get-content?content_id=$parentId") -> productContentRoot(parent)
+                url.contains("get-serial?content_id=$parentId") -> productSerialRoot(
+                    JSONArray().put(productPart(childId, 1, "بسوی افتخار", "5539c481-de25-4879-84f1-a70ae1bf599c")),
+                )
+                else -> error("Unexpected URL: $url")
+            }
+        })
+        val preview = client.preview(AllowedSource(SourceKind.PRODUCT, childId))
+        val (catalog, seasons) = client.loadProductSeasons(childId)
+        val page = client.loadProductSeasonPage(catalog.sourceId, seasons.single().seasonNumber, 0)
+        assertEquals(parentId, preview.sourceId)
+        assertEquals(parentId, catalog.sourceId)
+        assertEquals(listOf(1), seasons.map { it.seasonNumber })
+        assertEquals(listOf(childId), page.episodes.map { it.sourceEpisodeId })
+        assertTrue(requested.any { it.contains("get-serial?content_id=$parentId") })
+    }
+
     @Test
     fun productSerialPartsReadFromContentArray() {
         val root = productSerialRoot(
@@ -261,6 +296,10 @@ class TelewebionCatalogTest {
     private fun productSerialRoot(parts: JSONArray) = JSONObject().put(
         "body",
         JSONObject().put("content", JSONArray().put(JSONObject().put("serial_parts", parts))),
+    )
+
+    private fun productContentRoot(content: JSONObject) = JSONObject().put(
+        "body", JSONObject().put("content", JSONArray().put(content)),
     )
 
     private fun productPart(id: String, episode: Int, title: String, image: String) = JSONObject()

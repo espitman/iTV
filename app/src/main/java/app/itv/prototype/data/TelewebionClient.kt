@@ -36,12 +36,12 @@ class TelewebionClient(
                 )
             }
             SourceKind.PRODUCT -> {
-                val content = productContent(source.sourceId)
+                val content = productCatalogContent(source.sourceId)
                 val (title, poster, description) = CatalogMapper.productMeta(content)
                 val seasons = CatalogMapper.seasonsFromContent(content)
                 CatalogPreview(
                     kind = source.kind,
-                    sourceId = source.sourceId,
+                    sourceId = content.optString("content_id").ifBlank { source.sourceId },
                     title = title.ifBlank { source.sourceId },
                     posterUrl = poster,
                     description = description,
@@ -78,12 +78,12 @@ class TelewebionClient(
     }
 
     fun loadProductSeasons(sourceId: String): Pair<CatalogPreview, List<IncomingSeason>> {
-        val content = productContent(sourceId)
+        val content = productCatalogContent(sourceId)
         val (title, poster, description) = CatalogMapper.productMeta(content)
         val seasons = CatalogMapper.seasonsFromContent(content)
         val preview = CatalogPreview(
             kind = SourceKind.PRODUCT,
-            sourceId = sourceId,
+            sourceId = content.optString("content_id").ifBlank { sourceId },
             title = title.ifBlank { sourceId },
             posterUrl = poster,
             description = description,
@@ -147,6 +147,12 @@ class TelewebionClient(
     }
 
     fun loadMovie(contentId: String) = CatalogMapper.movieEpisode(productContent(contentId))
+
+    private fun productCatalogContent(contentId: String): JSONObject {
+        val content = productContent(contentId)
+        val parentId = CatalogMapper.parentSerialId(content) ?: return content
+        return productContent(parentId)
+    }
 
     private fun productContent(contentId: String): JSONObject {
         val root = getJson("$BASE/kandoo/vod/content/get-content?content_id=$contentId&q=abc")

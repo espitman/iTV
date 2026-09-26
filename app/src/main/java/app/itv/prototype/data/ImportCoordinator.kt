@@ -41,9 +41,15 @@ class ImportCoordinator(
             return existing.id
         }
         val preview = client.preview(source)
+        val canonicalExisting = repository.findBySource(source.kind, preview.sourceId)
+        if (canonicalExisting != null) {
+            repository.setImportState(canonicalExisting.id, ImportState.QUEUED)
+            resumePending()
+            return canonicalExisting.id
+        }
         val id = repository.insertSeries(
             kind = source.kind,
-            sourceId = source.sourceId,
+            sourceId = preview.sourceId,
             title = preview.title,
             posterUrl = preview.posterUrl,
             description = preview.description,
@@ -171,7 +177,7 @@ class ImportCoordinator(
             var offset = 0
             var seasonHasRows = false
             while (foreground) {
-                val page = client.loadProductSeasonPage(sourceId, season.seasonNumber, offset)
+                val page = client.loadProductSeasonPage(preview.sourceId, season.seasonNumber, offset)
                 if (page.finished) break
                 seasonHasRows = true
                 val ordered = page.episodes.mapIndexed { index, item ->

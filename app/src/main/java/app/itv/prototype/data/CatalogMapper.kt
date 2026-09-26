@@ -122,6 +122,13 @@ object CatalogMapper {
         }
     }
 
+    fun parentSerialId(content: JSONObject): String? {
+        if (!text(content, "content_type").equals("SERIALPARTS", ignoreCase = true)) return null
+        val id = text(content.optJSONObject("serial"), "content_id")
+        require(Regex("^0x[0-9a-fA-F]+$").matches(id)) { "شناسهٔ سریال این قسمت مشخص نشد" }
+        return id.lowercase()
+    }
+
     fun programEpisodes(episodes: JSONArray, startOrder: Int, seasonNumber: Int = 1): List<IncomingEpisode> {
         return (0 until episodes.length()).map { index ->
             val item = episodes.getJSONObject(index)
