@@ -14,6 +14,7 @@ import android.widget.TextView
 import app.itv.prototype.core.ImportState
 import app.itv.prototype.core.HomeCatalog
 import app.itv.prototype.core.LibrarySeries
+import app.itv.prototype.core.LibraryEpisode
 import app.itv.prototype.core.PlaybackRules
 import app.itv.prototype.core.persianDigits
 import app.itv.prototype.ui.PlayerActivity
@@ -60,11 +61,7 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.hero).clipRound(12f)
         listOf(heroPlay, heroDetails).forEach { it.bindFocusTint() }
         heroPlay.setOnClickListener {
-            heroSeries?.continueEpisode?.let { episode ->
-                startActivity(Intent(this, PlayerActivity::class.java)
-                    .putExtra(PlayerActivity.EXTRA_EPISODE_ID, episode.id)
-                    .putExtra(PlayerActivity.EXTRA_SERIES_ID, episode.seriesId))
-            }
+            heroSeries?.continueEpisode?.let(::openPlayer)
         }
         heroDetails.setOnClickListener { heroSeries?.let { openSeries(it.id) } }
         findViewById<Button>(R.id.navHome).apply {
@@ -95,11 +92,14 @@ class MainActivity : Activity() {
             return
         }
         bindHero(items.firstOrNull { it.id == heroSeries?.id } ?: items.firstOrNull { !it.isMovie } ?: items.first())
-        val groups = listOf(false to "سریال‌ها", true to "فیلم‌های سینمایی")
+        val groups = listOf(
+            Triple(null, "ادامهٔ تماشا", HomeCatalog.continueWatching(items)),
+            Triple(false, "سریال‌ها", HomeCatalog.recent(items, false)),
+            Triple(true, "فیلم‌های سینمایی", HomeCatalog.recent(items, true)),
+        )
         val cardRows = mutableListOf<List<View>>()
         val moreButtons = mutableMapOf<Boolean, View>()
-        groups.forEach { (movies, title) ->
-            val contents = HomeCatalog.recent(items, movies)
+        groups.forEach { (movies, title, contents) ->
             if (contents.isEmpty()) return@forEach
             val heading = TextView(this).apply {
                 text = title
@@ -123,32 +123,34 @@ class MainActivity : Activity() {
             }
             horizontal.addView(row, android.widget.FrameLayout.LayoutParams(-2, -2))
             library.addView(horizontal, LinearLayout.LayoutParams(-1, -2))
-            val cards = contents.map { item -> card(item, row).also { it.tag = item.id; it.ensureFocusId(); row.addView(it) } }.toMutableList()
-            val more = Button(this).apply {
-                ensureFocusId()
-                text = getString(R.string.show_more)
-                textSize = 15f
-                setTextColor(getColor(R.color.cyan))
-                setTypeface(typeface, Typeface.BOLD)
-                background = getDrawable(R.drawable.bg_episode)
-                isFocusable = true
-                isFocusableInTouchMode = true
-                isClickable = true
-                setOnFocusChangeListener { view, focused ->
-                    if (focused) {
+            val cards = contents.map { item -> card(item, row, movies == null).also { it.tag = item.id; it.ensureFocusId(); row.addView(it) } }.toMutableList()
+            if (movies != null) {
+                val more = Button(this).apply {
+                    ensureFocusId()
+                    text = getString(R.string.show_more)
+                    textSize = 15f
+                    setTextColor(getColor(R.color.cyan))
+                    setTypeface(typeface, Typeface.BOLD)
+                    background = getDrawable(R.drawable.bg_episode)
+                    isFocusable = true
+                    isFocusableInTouchMode = true
+                    isClickable = true
+                    setOnFocusChangeListener { view, focused ->
+                        if (focused) {
+                            focusedMoreKind = movies
+                            view.requestRectangleOnScreen(android.graphics.Rect(), false)
+                        }
+                    }
+                    setOnClickListener {
                         focusedMoreKind = movies
-                        view.requestRectangleOnScreen(android.graphics.Rect(), false)
+                        startActivity(Intent(this@MainActivity, LibraryGridActivity::class.java)
+                            .putExtra(LibraryGridActivity.EXTRA_MOVIES, movies))
                     }
                 }
-                setOnClickListener {
-                    focusedMoreKind = movies
-                    startActivity(Intent(this@MainActivity, LibraryGridActivity::class.java)
-                        .putExtra(LibraryGridActivity.EXTRA_MOVIES, movies))
-                }
+                row.addView(more, LinearLayout.LayoutParams(dp(138), dp(156)).apply { marginEnd = dp(12) })
+                cards += more
+                moreButtons[movies] = more
             }
-            row.addView(more, LinearLayout.LayoutParams(dp(138), dp(156)).apply { marginEnd = dp(12) })
-            cards += more
-            moreButtons[movies] = more
             wireRtlRow(cards)
             cardRows += cards
             horizontal.post { horizontal.scrollTo((row.width - horizontal.width).coerceAtLeast(0), 0) }
@@ -174,7 +176,7 @@ class MainActivity : Activity() {
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
-    private fun card(series: LibrarySeries, row: LinearLayout): View {
+    private fun card(series: LibrarySeries, row: LinearLayout, continuePlayback: Boolean): View {
         val card = layoutInflater.inflate(R.layout.item_series, row, false)
         val poster = card.findViewById<ImageView>(R.id.poster)
         poster.clipRound(6f)
@@ -226,9 +228,15 @@ class MainActivity : Activity() {
         }
         card.setOnClickListener {
             focusedSeriesId = series.id
-            openSeries(series.id)
+            if (continuePlayback) series.continueEpisode?.let(::openPlayer) else openSeries(series.id)
         }
         return card
+    }
+
+    private fun openPlayer(episode: LibraryEpisode) {
+        startActivity(Intent(this, PlayerActivity::class.java)
+            .putExtra(PlayerActivity.EXTRA_EPISODE_ID, episode.id)
+            .putExtra(PlayerActivity.EXTRA_SERIES_ID, episode.seriesId))
     }
 
     private fun openSeries(id: Long) {

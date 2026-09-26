@@ -424,6 +424,7 @@ class PlayerActivity : Activity() {
         if ((intro || outro) && !locked && !controlsVisible) {
             skip.visibility = View.VISIBLE
             skip.text = getString(if (intro) R.string.skip_intro else R.string.skip_outro)
+            if (!skip.hasFocus()) skip.requestFocus()
         } else {
             skip.visibility = View.GONE
         }
@@ -673,6 +674,14 @@ class PlayerActivity : Activity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_BACK) {
             return handleBack()
+        }
+        if (event.keyCode in listOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN) &&
+            ready && overlay.visibility != View.VISIBLE && !controlsVisible && !speedOpen() && !jumpOpen()) {
+            player?.let { updateSkip(it.currentPosition, it.duration) }
+            if (skip.isShown) {
+                if (event.action == KeyEvent.ACTION_DOWN && !skip.hasFocus()) skip.requestFocus()
+                return true
+            }
         }
         val horizontalKey = event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
         val mediaSeekKey = event.keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || event.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD
