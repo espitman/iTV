@@ -5,6 +5,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import app.itv.prototype.admin.LanDashboard
+import app.itv.prototype.data.CoverRefreshStore
 import app.itv.prototype.data.ImportCoordinator
 import app.itv.prototype.data.ItvDatabase
 import app.itv.prototype.data.LibraryRepository
@@ -27,7 +28,11 @@ class ItvApplication : Application() {
         Pictures.install(this)
         database = ItvDatabase.create(this)
         repository = LibraryRepository(database)
-        importer = ImportCoordinator(repository, telewebion)
+        importer = ImportCoordinator(
+            repository,
+            telewebion,
+            coverStore = CoverRefreshStore.from(this),
+        )
         dashboard = LanDashboard(this, repository, importer)
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {

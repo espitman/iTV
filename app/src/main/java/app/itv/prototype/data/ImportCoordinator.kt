@@ -20,6 +20,7 @@ class ImportCoordinator(
     private val repository: LibraryRepository,
     private val client: TelewebionClient = TelewebionClient(),
     private val now: () -> Long = { System.currentTimeMillis() },
+    private val coverStore: CoverRefreshStore? = null,
 ) {
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO)
@@ -58,6 +59,10 @@ class ImportCoordinator(
             durationMinutes = preview.durationMinutes,
             backdropUrl = preview.backdropUrl,
         )
+        if (source.kind == SourceKind.PRODUCT) {
+            coverStore?.remember(preview.sourceId)
+            coverStore?.remember(source.sourceId)
+        }
         resumePending()
         return id
     }
@@ -71,9 +76,15 @@ class ImportCoordinator(
     fun onForeground() {
         foreground = true
         scope.launch {
+            runCatching { refreshProductCovers() }
             repository.markStaleRunningAsQueued()
             resumePending()
         }
+    }
+
+    internal suspend fun refreshProductCovers() {
+        val store = coverStore ?: return
+        ProductCoverMigrator(repository, client, store, now).run()
     }
 
     fun onBackground() {

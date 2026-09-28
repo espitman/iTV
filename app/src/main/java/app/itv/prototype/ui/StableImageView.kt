@@ -12,7 +12,6 @@ class StableImageView @JvmOverloads constructor(
 ) : ImageView(context, attrs, defStyleAttr) {
     init {
         adjustViewBounds = false
-        scaleType = ScaleType.CENTER_CROP
     }
 
     override fun requestLayout() {

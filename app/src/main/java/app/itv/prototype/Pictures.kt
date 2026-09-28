@@ -15,6 +15,7 @@ import java.util.concurrent.Executors
 
 object Pictures {
     private val cache = LruCache<String, Bitmap>(64)
+    private val sizes = LruCache<String, Pair<Int, Int>>(128)
     private val worker = Executors.newFixedThreadPool(3)
     private val main = Handler(Looper.getMainLooper())
     private var diskDir: File? = null
@@ -30,17 +31,30 @@ object Pictures {
         return "https://static.telewebion.net/episodeImages/$id/default"
     }
 
-    fun load(url: String?, target: ImageView, placeholder: Int? = null) {
+    fun sizeOf(url: String?): Pair<Int, Int>? {
+        val resolved = episodeUrl(url) ?: return null
+        cache.get(resolved)?.let { return it.width to it.height }
+        return sizes.get(resolved)
+    }
+
+    fun load(url: String?, target: ImageView, placeholder: Int? = null, onReady: ((Bitmap) -> Unit)? = null) {
         val resolved = episodeUrl(url)
         if (resolved == null) {
             target.tag = null
             placeholder?.let { target.setImageResource(it) } ?: target.setImageDrawable(null)
             return
         }
-        if (target.tag == resolved && target.drawable != null) return
+        fun apply(bitmap: Bitmap) {
+            remember(resolved, bitmap)
+            if (target.tag == resolved) {
+                target.setImageBitmap(bitmap)
+                onReady?.invoke(bitmap)
+            }
+        }
+        if (target.tag == resolved && target.drawable != null && onReady == null) return
         target.tag = resolved
         cache.get(resolved)?.let {
-            target.setImageBitmap(it)
+            apply(it)
             return
         }
         if (target.drawable == null) {
@@ -49,10 +63,13 @@ object Pictures {
         worker.execute {
             val bitmap = runCatching { read(resolved) }.getOrNull() ?: return@execute
             cache.put(resolved, bitmap)
-            main.post {
-                if (target.tag == resolved) target.setImageBitmap(bitmap)
-            }
+            remember(resolved, bitmap)
+            main.post { apply(bitmap) }
         }
+    }
+
+    private fun remember(url: String, bitmap: Bitmap) {
+        sizes.put(url, bitmap.width to bitmap.height)
     }
 
     private fun read(url: String): Bitmap {
@@ -61,6 +78,7 @@ object Pictures {
             BitmapFactory.decodeFile(file.absolutePath)?.let { return it }
         }
         val bitmap = download(url)
+        remember(url, bitmap)
         if (file != null) runCatching { file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) } }
         return bitmap
     }

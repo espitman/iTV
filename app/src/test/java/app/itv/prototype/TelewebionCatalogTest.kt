@@ -101,7 +101,10 @@ class TelewebionCatalogTest {
             .put("sorted_seasons", JSONArray().put(1).put(2).put(3).put(4))
             .put(
                 "media",
-                JSONObject().put("horizontal_big_poster", "4acb2fcf-c93d-402d-ae63-4a821123e70f"),
+                JSONObject()
+                    .put("vertical_poster", "11111111-1111-1111-1111-111111111111")
+                    .put("horizontal_big_poster", "4acb2fcf-c93d-402d-ae63-4a821123e70f")
+                    .put("main_big_poster", "22222222-2222-2222-2222-222222222222"),
             )
         val (title, poster, description) = CatalogMapper.productMeta(content)
         val seasons = CatalogMapper.seasonsFromContent(content)
@@ -109,8 +112,12 @@ class TelewebionCatalogTest {
         assertEquals("داستان فریبرز", description)
         assertEquals(listOf(1, 2, 3, 4), seasons.map { it.seasonNumber })
         assertEquals(
-            "https://static.telewebion.net/vodBannerImages/4acb2fcf-c93d-402d-ae63-4a821123e70f/default",
+            "https://static.telewebion.net/vodBannerImages/11111111-1111-1111-1111-111111111111/default",
             poster,
+        )
+        assertEquals(
+            "https://static.telewebion.net/vodBannerImages/22222222-2222-2222-2222-222222222222/default",
+            CatalogMapper.productBackdrop(content),
         )
     }
 

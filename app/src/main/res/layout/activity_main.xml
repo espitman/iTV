@@ -11,20 +11,34 @@
         android:id="@+id/heroBackdropContainer"
         android:layout_width="match_parent"
         android:layout_height="@dimen/home_hero_h"
-        android:layout_gravity="top">
+        android:layout_gravity="top"
+        android:clipChildren="true"
+        android:clipToPadding="true">
+
+        <View
+            android:id="@+id/heroFallback"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#0A1524" />
 
         <app.itv.prototype.ui.StableImageView
             android:id="@+id/backdrop"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:adjustViewBounds="false"
-            android:scaleType="centerCrop"
+            android:scaleType="matrix"
             android:contentDescription="@null" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@drawable/scrim_hero" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/home_hero_fade_h"
+            android:layout_gravity="bottom"
+            android:background="@drawable/scrim_hero_bottom" />
     </FrameLayout>
 
     <ScrollView
@@ -42,18 +56,20 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:gravity="start"
             android:clipChildren="false"
             android:clipToPadding="false">
 
             <LinearLayout
                 android:id="@+id/heroTextContainer"
-                android:layout_width="match_parent"
+                android:layout_width="@dimen/home_hero_copy_w"
                 android:layout_height="@dimen/home_hero_copy"
                 android:orientation="vertical"
                 android:gravity="top|start"
+                android:layout_gravity="start"
                 android:paddingStart="@dimen/home_pad"
                 android:paddingEnd="@dimen/home_pad"
-                android:paddingTop="72dp"
+                android:paddingTop="118dp"
                 android:paddingBottom="8dp"
                 android:layoutDirection="rtl">
 
@@ -61,25 +77,25 @@
                     android:id="@+id/heroTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="@dimen/home_hero_title_h"
-                    android:maxWidth="420dp"
+                    android:maxWidth="268dp"
                     android:fontFamily="@font/byekan_family"
                     android:includeFontPadding="false"
                     android:gravity="center_vertical|start"
-                    android:textColor="#FFFFFF"
-                    android:textSize="48sp"
+                    android:textColor="#F4F7FA"
+                    android:textSize="36sp"
                     android:textStyle="bold"
                     android:maxLines="1"
                     android:ellipsize="end"
-                    android:shadowColor="#C0000000"
+                    android:shadowColor="#66000000"
                     android:shadowDx="0"
-                    android:shadowDy="2"
-                    android:shadowRadius="12" />
+                    android:shadowDy="1"
+                    android:shadowRadius="8" />
 
                 <LinearLayout
                     android:id="@+id/heroMetaRow"
                     android:layout_width="wrap_content"
-                    android:layout_height="22dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="6dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:layoutDirection="rtl">
@@ -92,7 +108,7 @@
                         android:includeFontPadding="false"
                         android:gravity="center"
                         android:textColor="#D5E0E3"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:background="@drawable/bg_meta_chip" />
 
                     <TextView
@@ -104,7 +120,7 @@
                         android:includeFontPadding="false"
                         android:gravity="center"
                         android:textColor="#D5E0E3"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:background="@drawable/bg_meta_chip"
                         android:visibility="gone" />
 
@@ -117,7 +133,7 @@
                         android:includeFontPadding="false"
                         android:gravity="center"
                         android:textColor="#D5E0E3"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:background="@drawable/bg_meta_chip"
                         android:visibility="gone" />
                 </LinearLayout>
@@ -126,16 +142,16 @@
                     android:id="@+id/heroActions"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:layoutDirection="rtl">
 
                     <Button
-                        android:id="@+id/heroPlay"
+                        android:id="@+id/heroDetails"
                         android:layout_width="wrap_content"
                         android:layout_height="@dimen/home_action_h"
-                        android:minWidth="128dp"
+                        android:minWidth="80dp"
                         android:minHeight="0dp"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
@@ -143,26 +159,23 @@
                         android:insetRight="0dp"
                         android:stateListAnimator="@null"
                         android:elevation="0dp"
-                        android:paddingStart="18dp"
-                        android:paddingEnd="16dp"
+                        android:paddingHorizontal="18dp"
                         android:paddingVertical="0dp"
-                        android:text="@string/hero_continue"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
+                        android:text="@string/hero_details"
+                        android:textSize="14sp"
+                        android:textStyle="normal"
                         android:fontFamily="@font/byekan_family"
                         android:includeFontPadding="false"
-                        android:drawableEnd="@drawable/ic_play_tiny"
-                        android:drawablePadding="8dp"
-                        android:background="@drawable/bg_primary_pill"
-                        android:textColor="@color/bg"
+                        android:background="@drawable/bg_button_pill"
+                        android:textColor="#E0E6ED"
                         android:focusable="true"
                         android:focusableInTouchMode="true" />
 
                     <Button
-                        android:id="@+id/heroDetails"
+                        android:id="@+id/heroPlay"
                         android:layout_width="wrap_content"
                         android:layout_height="@dimen/home_action_h"
-                        android:minWidth="78dp"
+                        android:minWidth="136dp"
                         android:minHeight="0dp"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
@@ -171,15 +184,18 @@
                         android:stateListAnimator="@null"
                         android:elevation="0dp"
                         android:layout_marginStart="10dp"
-                        android:paddingHorizontal="18dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="14dp"
                         android:paddingVertical="0dp"
-                        android:text="@string/hero_details"
-                        android:textSize="13sp"
-                        android:textStyle="normal"
+                        android:text="@string/hero_continue"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
                         android:fontFamily="@font/byekan_family"
                         android:includeFontPadding="false"
-                        android:background="@drawable/bg_button_pill"
-                        android:textColor="#E0E6ED"
+                        android:drawableEnd="@drawable/ic_play_tiny"
+                        android:drawablePadding="8dp"
+                        android:background="@drawable/bg_primary_pill"
+                        android:textColor="@color/bg"
                         android:focusable="true"
                         android:focusableInTouchMode="true" />
                 </LinearLayout>

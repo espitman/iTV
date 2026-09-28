@@ -2,6 +2,7 @@ package app.itv.prototype
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Matrix
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -18,6 +19,7 @@ import app.itv.prototype.core.LibrarySeries
 import app.itv.prototype.core.PlaybackRules
 import app.itv.prototype.core.persianDigits
 import app.itv.prototype.ui.HomeLayout
+import app.itv.prototype.ui.ImageSize
 import app.itv.prototype.ui.LibraryGridActivity
 import app.itv.prototype.ui.PlayerActivity
 import app.itv.prototype.ui.RtlShelfScrollView
@@ -112,11 +114,11 @@ class MainActivity : Activity() {
         headerNav.forEach { it.nextFocusDownId = heroPlay.id }
         headerNav.first().nextFocusRightId = headerNav.first().id
         headerNav.last().nextFocusLeftId = headerNav.last().id
-        wireRtlRow(listOf(heroPlay, heroDetails))
+        wireRtlRow(listOf(heroDetails, heroPlay))
         heroPlay.nextFocusUpId = navHome.id
         heroDetails.nextFocusUpId = navHome.id
-        heroPlay.nextFocusRightId = heroPlay.id
-        heroDetails.nextFocusLeftId = heroDetails.id
+        heroDetails.nextFocusRightId = heroDetails.id
+        heroPlay.nextFocusLeftId = heroPlay.id
     }
 
     override fun onStart() {
@@ -306,8 +308,15 @@ class MainActivity : Activity() {
             Pictures.load(thumbUrl, poster, R.drawable.bg_poster)
             bindProgress(card, continueEp, series)
         } else {
-            val posterUrl = series.posterUrl ?: series.backdropUrl
-            Pictures.load(posterUrl, poster, R.drawable.bg_poster)
+            val posterUrl = coverUrl(series)
+            Pictures.load(posterUrl, poster, R.drawable.bg_poster) { bitmap ->
+                val size = ImageSize(bitmap.width, bitmap.height)
+                poster.scaleType = if (HomeLayout.coverFitsFrame(size)) {
+                    ImageView.ScaleType.CENTER_CROP
+                } else {
+                    ImageView.ScaleType.FIT_CENTER
+                }
+            }
             val hasPoster = !posterUrl.isNullOrBlank()
             card.findViewById<View>(R.id.cardScrim)?.visibility = if (hasPoster) View.INVISIBLE else View.VISIBLE
             card.findViewById<TextView>(R.id.title)?.apply {
@@ -402,13 +411,50 @@ class MainActivity : Activity() {
         startActivity(Intent(this, SearchActivity::class.java))
     }
 
-    private fun artwork(series: LibrarySeries) = series.backdropUrl
-        ?: series.presentEpisodes.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl
-        ?: series.posterUrl
+    private fun imageSize(url: String?): ImageSize? =
+        Pictures.sizeOf(url)?.let { ImageSize(it.first, it.second) }
+
+    private fun coverUrl(series: LibrarySeries): String? =
+        HomeLayout.coverUrl(
+            series.posterUrl,
+            series.backdropUrl,
+            imageSize(series.posterUrl),
+            imageSize(series.backdropUrl),
+        ) ?: series.posterUrl ?: series.backdropUrl
+
+    private fun artwork(series: LibrarySeries): String? {
+        val episodeUrl = series.continueEpisode?.imageUrl
+            ?: series.presentEpisodes.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl
+        return HomeLayout.heroUrl(
+            series.backdropUrl,
+            episodeUrl,
+            series.posterUrl,
+            imageSize(series.backdropUrl),
+            imageSize(episodeUrl),
+            imageSize(series.posterUrl),
+        )
+    }
+
+    private fun applyHeroPlacement(view: ImageView, width: Int, height: Int) {
+        if (view.width <= 0 || view.height <= 0) {
+            view.post { applyHeroPlacement(view, width, height) }
+            return
+        }
+        val place = HomeLayout.heroPlacement(view.width, view.height, ImageSize(width, height))
+        val matrix = Matrix()
+        matrix.setScale(place.scale, place.scale)
+        matrix.postTranslate(place.translateX, place.translateY)
+        view.scaleType = ImageView.ScaleType.MATRIX
+        view.imageMatrix = matrix
+    }
 
     private fun bindHero(series: LibrarySeries) {
         heroSeries = series
-        Pictures.load(artwork(series), findViewById(R.id.backdrop))
+        val backdrop = findViewById<ImageView>(R.id.backdrop)
+        val url = artwork(series)
+        Pictures.load(url, backdrop) { bitmap ->
+            applyHeroPlacement(backdrop, bitmap.width, bitmap.height)
+        }
         findViewById<TextView>(R.id.heroTitle).text = series.title
         findViewById<TextView>(R.id.heroKindChip).text =
             getString(if (series.isMovie) R.string.hero_kind_movie else R.string.hero_kind_series)

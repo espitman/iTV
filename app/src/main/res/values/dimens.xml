@@ -1,24 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="home_pad">36dp</dimen>
-    <dimen name="home_header_h">56dp</dimen>
-    <dimen name="home_hero_h">360dp</dimen>
-    <dimen name="home_hero_copy">220dp</dimen>
-    <dimen name="home_hero_title_h">56dp</dimen>
-    <dimen name="home_continue_w">120dp</dimen>
-    <dimen name="home_continue_h">68dp</dimen>
-    <dimen name="home_poster_w">90dp</dimen>
-    <dimen name="home_poster_h">135dp</dimen>
-    <dimen name="home_continue_row_h">84dp</dimen>
-    <dimen name="home_poster_row_h">151dp</dimen>
+    <dimen name="home_pad">32dp</dimen>
+    <dimen name="home_header_h">48dp</dimen>
+    <dimen name="home_hero_h">354dp</dimen>
+    <dimen name="home_hero_fade_h">156dp</dimen>
+    <dimen name="home_hero_copy">246dp</dimen>
+    <dimen name="home_hero_copy_w">300dp</dimen>
+    <dimen name="home_hero_title_h">48dp</dimen>
+    <dimen name="home_hero_action_radius">6dp</dimen>
+    <dimen name="home_continue_w">112dp</dimen>
+    <dimen name="home_continue_h">63dp</dimen>
+    <dimen name="home_poster_w">76dp</dimen>
+    <dimen name="home_poster_h">114dp</dimen>
+    <dimen name="home_continue_row_h">78dp</dimen>
+    <dimen name="home_poster_row_h">128dp</dimen>
     <dimen name="home_card_gap">8dp</dimen>
     <dimen name="home_poster_gap">8dp</dimen>
-    <dimen name="home_card_radius">10dp</dimen>
+    <dimen name="home_card_radius">8dp</dimen>
     <dimen name="home_focus_pad">2.5dp</dimen>
-    <dimen name="home_shelf_pad_v">8dp</dimen>
+    <dimen name="home_shelf_pad_v">7dp</dimen>
     <dimen name="home_shelf_pad_h">4dp</dimen>
     <dimen name="home_progress_h">3dp</dimen>
-    <dimen name="home_nav_h">28dp</dimen>
-    <dimen name="home_action_h">32dp</dimen>
-    <dimen name="home_heading_h">28dp</dimen>
+    <dimen name="home_nav_h">30dp</dimen>
+    <dimen name="home_action_h">34dp</dimen>
+    <dimen name="home_heading_h">30dp</dimen>
 </resources>

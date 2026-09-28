@@ -48,9 +48,9 @@ object CatalogMapper {
             )
         } else {
             arrayOf(
-                "horizontal_big_poster",
                 "vertical_poster",
                 "main_small_poster",
+                "horizontal_big_poster",
                 "main_big_poster",
                 "horizontal_small_poster",
             )
@@ -177,9 +177,18 @@ object CatalogMapper {
 
     fun isMovie(content: JSONObject): Boolean = text(content, "content_type").equals("MOVIE", ignoreCase = true)
 
+    fun productCoverUrl(content: JSONObject): String? {
+        val media = content.optJSONObject("media")
+        imageUrl(text(media, "vertical_poster"), TelewebionImageKind.VOD)?.let { return it }
+        return productImageUrl(content, episode = false)
+    }
+
     fun productBackdrop(content: JSONObject): String? {
         val media = content.optJSONObject("media")
-        return imageUrl(text(media, "main_big_poster", "horizontal_big_poster", "main_small_poster"), TelewebionImageKind.VOD)
+        return imageUrl(
+            text(media, "main_big_poster", "horizontal_big_poster", "horizontal_small_poster", "main_small_poster"),
+            TelewebionImageKind.VOD,
+        )
     }
 
     fun movieEpisode(content: JSONObject): IncomingEpisode {
@@ -196,7 +205,7 @@ object CatalogMapper {
 
     fun productMeta(content: JSONObject): Triple<String, String?, String?> {
         val title = text(content, "persian_title", "title", "name", "Title")
-        val poster = (if (isMovie(content)) imageUrl(text(content.optJSONObject("media"), "vertical_poster"), TelewebionImageKind.VOD) else null) ?: productImageUrl(content, episode = false)
+        val poster = productCoverUrl(content)
         val description = text(content, "story", "description", "summary", "short_description").ifBlank { null }
         return Triple(title, poster, description)
     }

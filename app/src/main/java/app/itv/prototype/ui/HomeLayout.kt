@@ -1,6 +1,20 @@
 package app.itv.prototype.ui
 
+data class ImageSize(val width: Int, val height: Int) {
+    val aspect: Float get() = if (height <= 0) 0f else width.toFloat() / height.toFloat()
+}
+
+data class HeroPlacement(
+    val scale: Float,
+    val translateX: Float,
+    val translateY: Float,
+    val fullBleed: Boolean,
+)
+
 object HomeLayout {
+    const val LANDSCAPE_MIN_ASPECT = 1.45f
+    const val PORTRAIT_MAX_ASPECT = 0.82f
+
     fun rtlStartScrollX(
         rowWidth: Int,
         viewportWidth: Int,
@@ -19,4 +33,51 @@ object HomeLayout {
 
     fun catalogSignature(continueIds: List<Long>, seriesIds: List<Long>, movieIds: List<Long>, extras: List<String>): String =
         "c:${continueIds.joinToString(",")}|s:${seriesIds.joinToString(",")}|m:${movieIds.joinToString(",")}|x:${extras.joinToString(",")}"
+
+    fun isLandscape(size: ImageSize?): Boolean = size != null && size.width > 0 && size.aspect >= LANDSCAPE_MIN_ASPECT
+
+    fun isPortrait(size: ImageSize?): Boolean = size != null && size.height > 0 && size.aspect <= PORTRAIT_MAX_ASPECT
+
+    fun coverUrl(posterUrl: String?, backdropUrl: String?, poster: ImageSize?, backdrop: ImageSize?): String? = when {
+        isPortrait(poster) -> posterUrl
+        isPortrait(backdrop) -> backdropUrl
+        posterUrl != null -> posterUrl
+        else -> backdropUrl
+    }
+
+    fun heroUrl(
+        backdropUrl: String?,
+        episodeUrl: String?,
+        posterUrl: String?,
+        backdrop: ImageSize?,
+        episode: ImageSize?,
+        poster: ImageSize?,
+    ): String? {
+        val candidates = listOf(
+            backdropUrl to backdrop,
+            episodeUrl to episode,
+            posterUrl to poster,
+        ).filter { !it.first.isNullOrBlank() }
+        candidates.filter { isLandscape(it.second) }
+            .maxByOrNull { it.second?.aspect ?: 0f }
+            ?.first
+            ?.let { return it }
+        return candidates.firstOrNull { it.second == null }?.first
+            ?: candidates.firstOrNull()?.first
+    }
+
+    fun heroPlacement(viewW: Int, viewH: Int, image: ImageSize?): HeroPlacement {
+        if (viewW <= 0 || viewH <= 0 || image == null || image.width <= 0 || image.height <= 0) {
+            return HeroPlacement(1f, 0f, 0f, false)
+        }
+        if (!isLandscape(image)) {
+            val targetH = viewH * 0.62f
+            val scale = targetH / image.height.toFloat()
+            return HeroPlacement(scale, viewW * 0.06f, viewH * 0.10f, false)
+        }
+        val fitWidth = viewW / image.width.toFloat()
+        return HeroPlacement(fitWidth, 0f, 0f, true)
+    }
+
+    fun coverFitsFrame(size: ImageSize?): Boolean = isPortrait(size)
 }
