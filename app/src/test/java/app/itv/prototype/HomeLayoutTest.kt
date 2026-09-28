@@ -43,6 +43,29 @@ class HomeLayoutTest {
     }
 
     @Test
+    fun libraryScrollTopPinsContinueBelowHeroCopy() {
+        val heroCopy = 246
+        val heading = 30
+        val continueRow = 78
+        assertEquals(heroCopy, HomeLayout.libraryScrollTop(heroCopy, heading, continueRow, hasContinue = false))
+        assertEquals(354, HomeLayout.libraryScrollTop(heroCopy, heading, continueRow, hasContinue = true))
+        assertEquals(0, HomeLayout.sectionSnapY(0))
+        assertEquals(176, HomeLayout.sectionSnapY(176))
+        assertEquals(0, HomeLayout.sectionSnapY(-12))
+    }
+
+    @Test
+    fun libraryDrawClipFollowsScrollYInContentCoordinates() {
+        val viewportH = 744
+        assertEquals(0, HomeLayout.libraryDrawClipTop(0))
+        assertEquals(viewportH, HomeLayout.libraryDrawClipBottom(0, viewportH))
+        assertEquals(148, HomeLayout.libraryDrawClipTop(148))
+        assertEquals(148 + viewportH, HomeLayout.libraryDrawClipBottom(148, viewportH))
+        assertEquals(0, HomeLayout.libraryDrawClipTop(-12))
+        assertEquals(viewportH, HomeLayout.libraryDrawClipBottom(-12, viewportH))
+    }
+
+    @Test
     fun progressFillDoesNotDependOnViewWidth() {
         assertEquals(0f, HomeLayout.progressFill(0, 1000), 0f)
         assertEquals(0.25f, HomeLayout.progressFill(250, 1000), 0f)
@@ -66,6 +89,10 @@ class HomeLayoutTest {
         assertEquals("b", HomeLayout.coverUrl("p", "b", wide, poster))
         assertEquals(true, HomeLayout.coverFitsFrame(poster))
         assertEquals(false, HomeLayout.coverFitsFrame(wide))
+        assertEquals(false, HomeLayout.coverNeedsFill(poster))
+        assertEquals(true, HomeLayout.coverNeedsFill(wide))
+        assertEquals(true, HomeLayout.coverNeedsFill(ImageSize(440, 248)))
+        assertEquals(false, HomeLayout.coverNeedsFill(null))
     }
 
     @Test

@@ -1,10 +1,15 @@
 package app.itv.prototype
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.util.AttributeSet
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
@@ -18,6 +23,7 @@ import app.itv.prototype.core.LibraryEpisode
 import app.itv.prototype.core.LibrarySeries
 import app.itv.prototype.core.PlaybackRules
 import app.itv.prototype.core.persianDigits
+import app.itv.prototype.ui.CoverFill
 import app.itv.prototype.ui.HomeLayout
 import app.itv.prototype.ui.ImageSize
 import app.itv.prototype.ui.LibraryGridActivity
@@ -43,6 +49,7 @@ class MainActivity : Activity() {
     private lateinit var empty: View
     private lateinit var library: LinearLayout
     private lateinit var libraryScroll: ScrollView
+    private lateinit var continuePinned: LinearLayout
     private lateinit var settings: Button
     private lateinit var navHome: Button
     private lateinit var navLibrary: Button
@@ -61,9 +68,13 @@ class MainActivity : Activity() {
         empty = findViewById(R.id.empty)
         library = findViewById(R.id.library)
         libraryScroll = findViewById(R.id.libraryScroll)
+        continuePinned = findViewById(R.id.continuePinned)
         libraryScroll.isFocusable = false
         libraryScroll.isFocusableInTouchMode = false
         libraryScroll.descendantFocusability = android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
+        continuePinned.isFocusable = false
+        continuePinned.isFocusableInTouchMode = false
+        continuePinned.descendantFocusability = android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
         settings = findViewById(R.id.settings)
         heroPlay = findViewById(R.id.heroPlay)
         heroDetails = findViewById(R.id.heroDetails)
@@ -145,9 +156,13 @@ class MainActivity : Activity() {
         empty.visibility = if (hasItems) View.GONE else View.VISIBLE
         libraryScroll.visibility = if (hasItems) View.VISIBLE else View.GONE
         findViewById<View>(R.id.heroBackdropContainer)?.visibility = if (hasItems) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.heroTextContainer)?.visibility = if (hasItems) View.VISIBLE else View.GONE
         if (!hasItems) {
             heroSeries = null
             boundSignature = null
+            continuePinned.removeAllViews()
+            continuePinned.visibility = View.GONE
+            applyLibraryScrollTop(false)
             val target = findViewById<View>(R.id.emptySettings) ?: settings
             target.post { target.requestFocus() }
             return
@@ -166,12 +181,13 @@ class MainActivity : Activity() {
             },
         )
         val currentHero = items.firstOrNull { it.id == heroSeries?.id } ?: HomeCatalog.featured(items)
-        if (signature == boundSignature && library.childCount > 0) {
+        if (signature == boundSignature && (library.childCount > 0 || continuePinned.childCount > 0)) {
             currentHero?.let(::bindHero)
             return
         }
         boundSignature = signature
         library.removeAllViews()
+        continuePinned.removeAllViews()
         currentHero?.let(::bindHero)
 
         val groups = listOf(
@@ -186,11 +202,11 @@ class MainActivity : Activity() {
         groups.forEach { (movies, title, contents) ->
             if (contents.isEmpty()) return@forEach
 
-            val heading = layoutInflater.inflate(R.layout.item_home_heading, library, false) as TextView
-            heading.text = title
-            library.addView(heading)
-
             val continueRow = movies == null
+            val host = if (continueRow) continuePinned else library
+            val heading = layoutInflater.inflate(R.layout.item_home_heading, host, false) as TextView
+            heading.text = title
+            host.addView(heading)
             val rowHeight = resources.getDimensionPixelSize(
                 if (continueRow) R.dimen.home_continue_row_h else R.dimen.home_poster_row_h,
             )
@@ -212,7 +228,7 @@ class MainActivity : Activity() {
                 clipToPadding = false
             }
             horizontal.addView(row, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, cardHeight))
-            library.addView(horizontal, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, rowHeight))
+            host.addView(horizontal, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, rowHeight))
 
             val cards = contents.map { item ->
                 card(item, row, continueRow).also {
@@ -251,6 +267,10 @@ class MainActivity : Activity() {
             cardRows += cards
         }
 
+        val hasContinue = continuePinned.childCount > 0
+        continuePinned.visibility = if (hasContinue) View.VISIBLE else View.GONE
+        applyLibraryScrollTop(hasContinue)
+
         cardRows.forEachIndexed { rowIndex, cards ->
             cards.forEachIndexed { index, card ->
                 card.nextFocusUpId = cardRows.getOrNull(rowIndex - 1)?.let { it[index.coerceAtMost(it.lastIndex)].id } ?: heroPlay.id
@@ -282,18 +302,39 @@ class MainActivity : Activity() {
             .filterIsInstance<RtlShelfScrollView>()
             .firstOrNull()
         shelf?.reveal(view, true)
-        if (shelf == null) return
-        val contentTop = library.top + shelf.top
-        val contentBottom = contentTop + shelf.height
-        val visibleTop = libraryScroll.scrollY
-        val visibleBottom = visibleTop + libraryScroll.height
-        val headerReserve = resources.getDimensionPixelSize(R.dimen.home_header_h)
-        val nextY = when {
-            contentTop < visibleTop + headerReserve -> (contentTop - headerReserve).coerceAtLeast(0)
-            contentBottom > visibleBottom -> contentBottom - libraryScroll.height
-            else -> return
+        if (shelf == null || isPinnedShelf(shelf)) return
+        if (libraryScroll.height <= 0) return
+        val heading = sectionHeading(shelf)
+        if (heading != null) {
+            libraryScroll.scrollTo(0, HomeLayout.sectionSnapY(heading.top))
+            return
         }
-        libraryScroll.scrollTo(0, nextY)
+        val rect = Rect(0, 0, shelf.width, shelf.height)
+        libraryScroll.offsetDescendantRectToMyCoords(shelf, rect)
+        val delta = HomeLayout.revealDelta(rect.top, rect.bottom, 0, libraryScroll.height)
+        if (delta == 0) return
+        libraryScroll.scrollTo(0, (libraryScroll.scrollY + delta).coerceAtLeast(0))
+    }
+
+    private fun isPinnedShelf(shelf: View): Boolean =
+        generateSequence(shelf.parent as? View) { it.parent as? View }
+            .any { it.id == R.id.continuePinned }
+
+    private fun sectionHeading(shelf: View): View? {
+        val parent = shelf.parent as? LinearLayout ?: return null
+        val index = parent.indexOfChild(shelf)
+        return if (index > 0) parent.getChildAt(index - 1) else null
+    }
+
+    private fun applyLibraryScrollTop(hasContinue: Boolean) {
+        val params = libraryScroll.layoutParams as FrameLayout.LayoutParams
+        params.topMargin = HomeLayout.libraryScrollTop(
+            resources.getDimensionPixelSize(R.dimen.home_hero_copy),
+            resources.getDimensionPixelSize(R.dimen.home_heading_h),
+            resources.getDimensionPixelSize(R.dimen.home_continue_row_h),
+            hasContinue,
+        )
+        libraryScroll.layoutParams = params
     }
 
     private fun card(series: LibrarySeries, row: LinearLayout, continuePlayback: Boolean): View {
@@ -310,13 +351,10 @@ class MainActivity : Activity() {
             bindProgress(card, continueEp, series)
         } else {
             val posterUrl = coverUrl(series)
+            val posterFill = card.findViewById<ImageView>(R.id.posterFill)
+            CoverFill.clear(posterFill)
             Pictures.load(posterUrl, poster, R.drawable.bg_poster) { bitmap ->
-                val size = ImageSize(bitmap.width, bitmap.height)
-                poster.scaleType = if (HomeLayout.coverFitsFrame(size)) {
-                    ImageView.ScaleType.CENTER_CROP
-                } else {
-                    ImageView.ScaleType.FIT_CENTER
-                }
+                bindPosterCover(poster, posterFill, bitmap)
             }
             val hasPoster = !posterUrl.isNullOrBlank()
             card.findViewById<View>(R.id.cardScrim)?.visibility = if (hasPoster) View.INVISIBLE else View.VISIBLE
@@ -412,6 +450,17 @@ class MainActivity : Activity() {
         startActivity(Intent(this, SearchActivity::class.java))
     }
 
+    private fun bindPosterCover(poster: ImageView, fill: ImageView?, bitmap: Bitmap) {
+        val size = ImageSize(bitmap.width, bitmap.height)
+        if (HomeLayout.coverNeedsFill(size)) {
+            poster.scaleType = ImageView.ScaleType.FIT_CENTER
+            CoverFill.bind(fill, bitmap, poster.tag)
+        } else {
+            poster.scaleType = ImageView.ScaleType.CENTER_CROP
+            CoverFill.clear(fill)
+        }
+    }
+
     private fun imageSize(url: String?): ImageSize? =
         Pictures.sizeOf(url)?.let { ImageSize(it.first, it.second) }
 
@@ -504,5 +553,37 @@ class MainActivity : Activity() {
 
     private fun openSettings() {
         startActivity(Intent(this, SettingsActivity::class.java))
+    }
+}
+
+/**
+ * Home shelf scroller that ignores default focus auto-scroll. Scaled cinematic
+ * focus rectangles would otherwise jump the viewport; [MainActivity] reveals
+ * the active row against the overlay viewport instead. Vertical drawing is
+ * clipped in content coordinates ([HomeLayout.libraryDrawClipTop] /
+ * [HomeLayout.libraryDrawClipBottom]) so rows cannot paint over the pinned
+ * hero/continue block after the canvas is translated by -scrollY, while a
+ * horizontal slop keeps poster focus glow visible.
+ */
+class HomeLibraryScrollView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+) : ScrollView(context, attrs) {
+    override fun computeScrollDeltaToGetChildRectOnScreen(rect: Rect): Int = 0
+
+    override fun dispatchDraw(canvas: Canvas) {
+        val extra = (24f * resources.displayMetrics.density).toInt()
+        val save = canvas.save()
+        canvas.clipRect(
+            -extra,
+            HomeLayout.libraryDrawClipTop(scrollY),
+            width + extra,
+            HomeLayout.libraryDrawClipBottom(scrollY, height),
+        )
+        try {
+            super.dispatchDraw(canvas)
+        } finally {
+            canvas.restoreToCount(save)
+        }
     }
 }

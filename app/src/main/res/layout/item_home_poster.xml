@@ -17,6 +17,15 @@
         android:layout_height="match_parent">
 
         <app.itv.prototype.ui.StableImageView
+            android:id="@+id/posterFill"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="false"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:importantForAccessibility="no" />
+
+        <app.itv.prototype.ui.StableImageView
             android:id="@+id/poster"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

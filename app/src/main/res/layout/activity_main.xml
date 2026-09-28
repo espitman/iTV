@@ -40,10 +40,11 @@
             android:layout_gravity="bottom" />
     </FrameLayout>
 
-    <ScrollView
+    <app.itv.prototype.HomeLibraryScrollView
         android:id="@+id/libraryScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/home_hero_copy"
         android:clipChildren="false"
         android:clipToPadding="false"
         android:fillViewport="true"
@@ -52,166 +53,170 @@
         android:scrollbars="none">
 
         <LinearLayout
+            android:id="@+id/library"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="start"
             android:clipChildren="false"
-            android:clipToPadding="false">
+            android:clipToPadding="false"
+            android:paddingStart="@dimen/home_pad"
+            android:paddingEnd="@dimen/home_pad"
+            android:paddingBottom="40dp" />
+    </app.itv.prototype.HomeLibraryScrollView>
 
-            <LinearLayout
-                android:id="@+id/heroTextContainer"
-                android:layout_width="@dimen/home_hero_copy_w"
-                android:layout_height="@dimen/home_hero_copy"
-                android:orientation="vertical"
-                android:gravity="top|start"
-                android:layout_gravity="start"
-                android:paddingStart="@dimen/home_pad"
-                android:paddingEnd="@dimen/home_pad"
-                android:paddingTop="118dp"
-                android:paddingBottom="8dp"
-                android:layoutDirection="rtl">
+    <LinearLayout
+        android:id="@+id/continuePinned"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:layout_marginTop="@dimen/home_hero_copy"
+        android:orientation="vertical"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/home_pad"
+        android:paddingEnd="@dimen/home_pad"
+        android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/heroTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="@dimen/home_hero_title_h"
-                    android:maxWidth="268dp"
-                    android:fontFamily="@font/byekan_family"
-                    android:includeFontPadding="false"
-                    android:gravity="center_vertical|start"
-                    android:textColor="#F4F7FA"
-                    android:textSize="36sp"
-                    android:textStyle="bold"
-                    android:maxLines="1"
-                    android:ellipsize="end"
-                    android:shadowColor="#66000000"
-                    android:shadowDx="0"
-                    android:shadowDy="1"
-                    android:shadowRadius="8" />
+    <LinearLayout
+        android:id="@+id/heroTextContainer"
+        android:layout_width="@dimen/home_hero_copy_w"
+        android:layout_height="@dimen/home_hero_copy"
+        android:orientation="vertical"
+        android:gravity="top|start"
+        android:layout_gravity="top|start"
+        android:paddingStart="@dimen/home_pad"
+        android:paddingEnd="@dimen/home_pad"
+        android:paddingTop="118dp"
+        android:paddingBottom="8dp"
+        android:layoutDirection="rtl">
 
-                <LinearLayout
-                    android:id="@+id/heroMetaRow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="20dp"
-                    android:layout_marginTop="6dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:layoutDirection="rtl">
+        <TextView
+            android:id="@+id/heroTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/home_hero_title_h"
+            android:maxWidth="268dp"
+            android:fontFamily="@font/byekan_family"
+            android:includeFontPadding="false"
+            android:gravity="center_vertical|start"
+            android:textColor="#F4F7FA"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:shadowColor="#66000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="8" />
 
-                    <TextView
-                        android:id="@+id/heroKindChip"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:fontFamily="@font/byekan_family"
-                        android:includeFontPadding="false"
-                        android:gravity="center"
-                        android:textColor="#D5E0E3"
-                        android:textSize="12sp"
-                        android:background="@drawable/bg_meta_chip" />
+        <LinearLayout
+            android:id="@+id/heroMetaRow"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layoutDirection="rtl">
 
-                    <TextView
-                        android:id="@+id/heroChip2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
-                        android:fontFamily="@font/byekan_family"
-                        android:includeFontPadding="false"
-                        android:gravity="center"
-                        android:textColor="#D5E0E3"
-                        android:textSize="12sp"
-                        android:background="@drawable/bg_meta_chip"
-                        android:visibility="gone" />
+            <TextView
+                android:id="@+id/heroKindChip"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:fontFamily="@font/byekan_family"
+                android:includeFontPadding="false"
+                android:gravity="center"
+                android:textColor="#D5E0E3"
+                android:textSize="12sp"
+                android:background="@drawable/bg_meta_chip" />
 
-                    <TextView
-                        android:id="@+id/heroChip3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
-                        android:fontFamily="@font/byekan_family"
-                        android:includeFontPadding="false"
-                        android:gravity="center"
-                        android:textColor="#D5E0E3"
-                        android:textSize="12sp"
-                        android:background="@drawable/bg_meta_chip"
-                        android:visibility="gone" />
-                </LinearLayout>
+            <TextView
+                android:id="@+id/heroChip2"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:fontFamily="@font/byekan_family"
+                android:includeFontPadding="false"
+                android:gravity="center"
+                android:textColor="#D5E0E3"
+                android:textSize="12sp"
+                android:background="@drawable/bg_meta_chip"
+                android:visibility="gone" />
 
-                <LinearLayout
-                    android:id="@+id/heroActions"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:layoutDirection="rtl">
-
-                    <Button
-                        android:id="@+id/heroDetails"
-                        android:layout_width="wrap_content"
-                        android:layout_height="@dimen/home_action_h"
-                        android:minWidth="80dp"
-                        android:minHeight="0dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:insetLeft="0dp"
-                        android:insetRight="0dp"
-                        android:stateListAnimator="@null"
-                        android:elevation="0dp"
-                        android:paddingHorizontal="18dp"
-                        android:paddingVertical="0dp"
-                        android:text="@string/hero_details"
-                        android:textSize="14sp"
-                        android:textStyle="normal"
-                        android:fontFamily="@font/byekan_family"
-                        android:includeFontPadding="false"
-                        android:background="@drawable/bg_button_pill"
-                        android:textColor="#E0E6ED"
-                        android:focusable="true"
-                        android:focusableInTouchMode="true" />
-
-                    <Button
-                        android:id="@+id/heroPlay"
-                        android:layout_width="wrap_content"
-                        android:layout_height="@dimen/home_action_h"
-                        android:minWidth="136dp"
-                        android:minHeight="0dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:insetLeft="0dp"
-                        android:insetRight="0dp"
-                        android:stateListAnimator="@null"
-                        android:elevation="0dp"
-                        android:layout_marginStart="10dp"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="14dp"
-                        android:paddingVertical="0dp"
-                        android:text="@string/hero_continue"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:fontFamily="@font/byekan_family"
-                        android:includeFontPadding="false"
-                        android:drawableEnd="@drawable/ic_play_tiny"
-                        android:drawablePadding="8dp"
-                        android:background="@drawable/bg_primary_pill"
-                        android:textColor="@color/bg"
-                        android:focusable="true"
-                        android:focusableInTouchMode="true" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/library"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:paddingStart="@dimen/home_pad"
-                android:paddingEnd="@dimen/home_pad"
-                android:paddingBottom="40dp" />
+            <TextView
+                android:id="@+id/heroChip3"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:fontFamily="@font/byekan_family"
+                android:includeFontPadding="false"
+                android:gravity="center"
+                android:textColor="#D5E0E3"
+                android:textSize="12sp"
+                android:background="@drawable/bg_meta_chip"
+                android:visibility="gone" />
         </LinearLayout>
-    </ScrollView>
+
+        <LinearLayout
+            android:id="@+id/heroActions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layoutDirection="rtl">
+
+            <Button
+                android:id="@+id/heroDetails"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/home_action_h"
+                android:minWidth="80dp"
+                android:minHeight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:stateListAnimator="@null"
+                android:elevation="0dp"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="0dp"
+                android:text="@string/hero_details"
+                android:textSize="14sp"
+                android:textStyle="normal"
+                android:fontFamily="@font/byekan_family"
+                android:includeFontPadding="false"
+                android:background="@drawable/bg_button_pill"
+                android:textColor="#E0E6ED"
+                android:focusable="true"
+                android:focusableInTouchMode="true" />
+
+            <Button
+                android:id="@+id/heroPlay"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/home_action_h"
+                android:minWidth="136dp"
+                android:minHeight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:stateListAnimator="@null"
+                android:elevation="0dp"
+                android:layout_marginStart="10dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="14dp"
+                android:paddingVertical="0dp"
+                android:text="@string/hero_continue"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/byekan_family"
+                android:includeFontPadding="false"
+                android:drawableEnd="@drawable/ic_play_tiny"
+                android:drawablePadding="8dp"
+                android:background="@drawable/bg_primary_pill"
+                android:textColor="@color/bg"
+                android:focusable="true"
+                android:focusableInTouchMode="true" />
+        </LinearLayout>
+    </LinearLayout>
 
     <include layout="@layout/view_home_header" />
 

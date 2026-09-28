@@ -60,6 +60,24 @@ object HomeLayout {
         else -> 0
     }
 
+    fun libraryScrollTop(heroCopy: Int, heading: Int, continueRow: Int, hasContinue: Boolean): Int {
+        val pinned = if (hasContinue) heading.coerceAtLeast(0) + continueRow.coerceAtLeast(0) else 0
+        return heroCopy.coerceAtLeast(0) + pinned
+    }
+
+    fun sectionSnapY(headingTop: Int): Int = headingTop.coerceAtLeast(0)
+
+    /**
+     * Vertical clip for Home library drawing in content coordinates. The
+     * ScrollView canvas is already translated by -scrollY, so clipping at
+     * 0..height only keeps the first page of content and lets earlier rows
+     * paint over pinned hero/continue. Horizontal slop stays on the caller.
+     */
+    fun libraryDrawClipTop(scrollY: Int): Int = scrollY.coerceAtLeast(0)
+
+    fun libraryDrawClipBottom(scrollY: Int, height: Int): Int =
+        libraryDrawClipTop(scrollY) + height.coerceAtLeast(0)
+
     fun progressFill(positionMs: Long, durationMs: Long): Float =
         if (durationMs <= 0L) 0f else (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
 
@@ -112,4 +130,7 @@ object HomeLayout {
     }
 
     fun coverFitsFrame(size: ImageSize?): Boolean = isPortrait(size)
+
+    fun coverNeedsFill(size: ImageSize?): Boolean =
+        size != null && size.width > 0 && size.height > 0 && !coverFitsFrame(size)
 }
