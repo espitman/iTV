@@ -95,6 +95,11 @@ class SeriesActivity : Activity() {
             setOnClickListener { episodes.getChildAt(0)?.requestFocus() }
         }
         poster.clipRound(14f)
+        poster.adjustViewBounds = false
+        findViewById<ImageView>(R.id.backdrop).apply {
+            adjustViewBounds = false
+            scaleType = ImageView.ScaleType.CENTER_CROP
+        }
         if (seriesId == 0L) finish()
     }
 
@@ -133,8 +138,15 @@ class SeriesActivity : Activity() {
         findViewById<View>(R.id.seriesHero).layoutParams = findViewById<View>(R.id.seriesHero).layoutParams.apply { height = ((if (series.isMovie) 430 else 246) * resources.displayMetrics.density).toInt() }
         description.text = series.description.orEmpty()
         description.visibility = if (series.description.isNullOrBlank()) View.GONE else View.VISIBLE
-        Pictures.load(series.posterUrl, poster, R.drawable.bg_poster)
-        Pictures.load(series.backdropUrl ?: series.presentEpisodes.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl ?: series.posterUrl, findViewById(R.id.backdrop))
+        val backdrop = findViewById<ImageView>(R.id.backdrop)
+        backdrop.adjustViewBounds = false
+        Pictures.load(
+            series.backdropUrl
+                ?: series.presentEpisodes.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl
+                ?: series.posterUrl,
+            backdrop,
+            R.drawable.bg_poster,
+        )
         val continueEp = series.continueEpisode
         play.isEnabled = continueEp != null
         play.text = when {
@@ -235,8 +247,9 @@ class SeriesActivity : Activity() {
             card.tag = episode.sourceEpisodeId
             card.setTag(R.id.episodes, episode.sourceEpisodeId)
             val thumb = card.findViewById<ImageView>(R.id.thumb)
+            thumb.adjustViewBounds = false
+            thumb.scaleType = ImageView.ScaleType.CENTER_CROP
             thumb.clipRound(5f)
-            Pictures.load(episode.imageUrl, thumb, R.drawable.bg_poster)
             card.findViewById<TextView>(R.id.title).text = episode.label()
             card.findViewById<TextView>(R.id.episodeNumber).text = persianDigits((episode.displayNumber ?: (episode.sourceOrder + 1).toString()).padStart(2, '0'))
             card.findViewById<TextView>(R.id.state).text =
@@ -267,6 +280,7 @@ class SeriesActivity : Activity() {
                 true
             }
             episodes.addView(card)
+            Pictures.load(episode.imageUrl, thumb, R.drawable.bg_poster)
             card
         }
     }

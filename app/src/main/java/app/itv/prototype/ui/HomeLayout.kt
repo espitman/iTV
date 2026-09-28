@@ -22,6 +22,38 @@ object HomeLayout {
         paddingRight: Int = 0,
     ): Int = (rowWidth - (viewportWidth - paddingLeft - paddingRight)).coerceAtLeast(0)
 
+    fun shelfRowWidth(
+        posterCount: Int,
+        posterWidth: Int,
+        gap: Int,
+        moreWidth: Int,
+        includeMore: Boolean = true,
+    ): Int {
+        val posters = posterCount.coerceAtLeast(0)
+        val cards = posters + if (includeMore) 1 else 0
+        if (cards == 0) return 0
+        val posterSpan = posters * posterWidth.coerceAtLeast(0)
+        val moreSpan = if (includeMore) moreWidth.coerceAtLeast(0) else 0
+        return posterSpan + moreSpan + cards * gap.coerceAtLeast(0)
+    }
+
+    fun shelfVisibleCount(
+        availableWidth: Int,
+        posterWidth: Int,
+        gap: Int,
+        paddingStart: Int,
+        paddingEnd: Int,
+        moreWidth: Int,
+        maxCount: Int = 8,
+    ): Int {
+        val inner = (availableWidth - paddingStart.coerceAtLeast(0) - paddingEnd.coerceAtLeast(0)).coerceAtLeast(0)
+        var count = maxCount.coerceAtLeast(0)
+        while (count > 0 && shelfRowWidth(count, posterWidth, gap, moreWidth) > inner) {
+            count--
+        }
+        return count
+    }
+
     fun revealDelta(childStart: Int, childEnd: Int, viewportStart: Int, viewportEnd: Int): Int = when {
         childStart < viewportStart -> childStart - viewportStart
         childEnd > viewportEnd -> childEnd - viewportEnd

@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
+import android.view.View
 import android.widget.ImageView
 import app.itv.prototype.data.TelewebionClient
 import java.io.File
@@ -39,6 +40,7 @@ object Pictures {
 
     fun load(url: String?, target: ImageView, placeholder: Int? = null, onReady: ((Bitmap) -> Unit)? = null) {
         val resolved = episodeUrl(url)
+        target.adjustViewBounds = false
         if (resolved == null) {
             target.tag = null
             placeholder?.let { target.setImageResource(it) } ?: target.setImageDrawable(null)
@@ -46,10 +48,11 @@ object Pictures {
         }
         fun apply(bitmap: Bitmap) {
             remember(resolved, bitmap)
-            if (target.tag == resolved) {
-                target.setImageBitmap(bitmap)
-                onReady?.invoke(bitmap)
-            }
+            if (target.tag != resolved) return
+            if (target.visibility == View.GONE) return
+            target.adjustViewBounds = false
+            target.setImageBitmap(bitmap)
+            onReady?.invoke(bitmap)
         }
         if (target.tag == resolved && target.drawable != null && onReady == null) return
         target.tag = resolved

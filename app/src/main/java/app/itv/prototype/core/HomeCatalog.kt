@@ -1,7 +1,7 @@
 package app.itv.prototype.core
 
 object HomeCatalog {
-    const val HOME_LIMIT = 10
+    const val HOME_LIMIT = 8
 
     fun continueWatching(items: List<LibrarySeries>): List<LibrarySeries> =
         items.asSequence()
@@ -16,8 +16,8 @@ object HomeCatalog {
             .sortedWith(newestFirst)
             .toList()
 
-    fun recent(items: List<LibrarySeries>, movies: Boolean): List<LibrarySeries> =
-        all(items, movies).take(HOME_LIMIT)
+    fun recent(items: List<LibrarySeries>, movies: Boolean, limit: Int = HOME_LIMIT): List<LibrarySeries> =
+        all(items, movies).take(limit.coerceAtLeast(0))
 
     fun featured(items: List<LibrarySeries>): LibrarySeries? =
         continueWatching(items).firstOrNull()

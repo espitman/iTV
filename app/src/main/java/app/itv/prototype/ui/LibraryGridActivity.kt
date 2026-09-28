@@ -2,6 +2,7 @@ package app.itv.prototype.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -17,7 +18,6 @@ import app.itv.prototype.R
 import app.itv.prototype.core.HomeCatalog
 import app.itv.prototype.core.ImportState
 import app.itv.prototype.core.LibrarySeries
-import app.itv.prototype.core.PlaybackRules
 import app.itv.prototype.core.persianDigits
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,24 +32,37 @@ class LibraryGridActivity : Activity() {
     private lateinit var grid: GridView
     private lateinit var adapter: SeriesAdapter
     private var movies = false
+    private var applied: LibraryGridLayout.Metrics? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_library_grid)
         movies = intent.getBooleanExtra(EXTRA_MOVIES, false)
-        findViewById<TextView>(R.id.gridTitle).setText(if (movies) R.string.all_movies else R.string.all_series)
+        findViewById<TextView>(R.id.gridTitle).setText(
+            if (movies) R.string.catalog_movies_title else R.string.catalog_series_title,
+        )
+        findViewById<TextView>(R.id.gridChip).setText(
+            if (movies) R.string.catalog_movies_chip else R.string.catalog_series_chip,
+        )
         grid = findViewById(R.id.grid)
+        if (Build.VERSION.SDK_INT >= 26) grid.defaultFocusHighlightEnabled = false
+        grid.selector = getDrawable(android.R.color.transparent)
+        grid.stretchMode = GridView.NO_STRETCH
         adapter = SeriesAdapter()
         grid.adapter = adapter
         grid.onItemClickListener = android.widget.AdapterView.OnItemClickListener { _, _, position, _ ->
             val series = adapter.getItem(position)
             startActivity(Intent(this, SeriesActivity::class.java).putExtra(SeriesActivity.EXTRA_ID, series.id))
         }
-        findViewById<Button>(R.id.navHome).apply { bindFocusTint(); setOnClickListener { finish() } }
-        findViewById<Button>(R.id.settings).apply {
+        findViewById<Button>(R.id.navBack).apply {
             bindFocusTint()
-            setOnClickListener { startActivity(Intent(this@LibraryGridActivity, SettingsActivity::class.java)) }
+            if (Build.VERSION.SDK_INT >= 26) defaultFocusHighlightEnabled = false
+            setOnClickListener { finish() }
+            nextFocusDownId = R.id.grid
         }
+        grid.nextFocusUpId = R.id.navBack
+        applyGridMetrics()
+        grid.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> applyGridMetrics() }
     }
 
     override fun onStart() {
@@ -78,10 +91,34 @@ class LibraryGridActivity : Activity() {
         super.onDestroy()
     }
 
-    private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+    private fun applyGridMetrics() {
+        val catalogPad = resources.getDimensionPixelSize(R.dimen.catalog_pad)
+        val width = if (grid.width > 0) grid.width else resources.displayMetrics.widthPixels
+        val available = width - 2 * catalogPad
+        if (available <= 0) return
+        val metrics = LibraryGridLayout.metrics(
+            availableWidth = available,
+            minColumnWidth = resources.getDimensionPixelSize(R.dimen.catalog_min_column),
+            titleBlock = resources.getDimensionPixelSize(R.dimen.catalog_title_block),
+            focusPad = resources.getDimensionPixelSize(R.dimen.catalog_focus_pad),
+        )
+        val padLeft = catalogPad + metrics.leftGutter
+        val padRight = catalogPad + metrics.rightGutter
+        if (applied == metrics && grid.paddingLeft == padLeft && grid.paddingRight == padRight) return
+        applied = metrics
+        adapter.metrics = metrics
+        grid.setPadding(padLeft, grid.paddingTop, padRight, grid.paddingBottom)
+        grid.numColumns = metrics.columns
+        grid.horizontalSpacing = metrics.gap
+        grid.verticalSpacing = metrics.gap
+        grid.columnWidth = metrics.columnWidth
+        grid.stretchMode = GridView.NO_STRETCH
+        adapter.notifyDataSetChanged()
+    }
 
     private inner class SeriesAdapter : BaseAdapter() {
         var items: List<LibrarySeries> = emptyList()
+        var metrics: LibraryGridLayout.Metrics? = null
 
         override fun getCount() = items.size
         override fun getItem(position: Int) = items[position]
@@ -89,26 +126,33 @@ class LibraryGridActivity : Activity() {
         override fun hasStableIds() = true
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val focusPad = resources.getDimensionPixelSize(R.dimen.catalog_focus_pad)
+            val titleBlock = resources.getDimensionPixelSize(R.dimen.catalog_title_block)
+            val columnWidth = metrics?.columnWidth
+                ?: grid.columnWidth.takeIf { it > 0 }
+                ?: resources.getDimensionPixelSize(R.dimen.catalog_min_column)
+            val posterHeight = LibraryGridLayout.posterFrameHeight(columnWidth, focusPad)
+            val itemHeight = posterHeight + titleBlock
             val card = convertView ?: layoutInflater.inflate(R.layout.item_series, parent, false).apply {
-                layoutParams = AbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(156))
                 isFocusable = false
                 isFocusableInTouchMode = false
                 isClickable = false
+                if (Build.VERSION.SDK_INT >= 26) defaultFocusHighlightEnabled = false
             }
+            card.isSelected = position == grid.selectedItemPosition
+            card.refreshDrawableState()
+            card.layoutParams = AbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, itemHeight)
+            card.findViewById<View>(R.id.posterFrame).layoutParams =
+                card.findViewById<View>(R.id.posterFrame).layoutParams.apply { height = posterHeight }
             val series = getItem(position)
             val poster = card.findViewById<ImageView>(R.id.poster)
-            poster.clipRound(6f)
-            Pictures.load(series.backdropUrl
-                ?: series.presentEpisodes.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl
-                ?: series.posterUrl, poster, R.drawable.bg_poster)
+            val inner = card.findViewById<View>(R.id.cardInner)
+            inner.clipRound(10f)
+            Pictures.load(LibraryGridLayout.coverUrl(series.posterUrl, series.backdropUrl), poster, R.drawable.bg_poster)
             card.findViewById<TextView>(R.id.title).text = series.title
-            card.findViewById<TextView>(R.id.meta).text = if (series.isMovie) {
-                if (series.durationMinutes > 0) "فیلم سینمایی · ${persianDigits(series.durationMinutes)} دقیقه" else "فیلم سینمایی"
-            } else {
-                getString(R.string.season_episode_meta,
-                    getString(R.string.season_count, persianDigits(series.presentSeasonCount)),
-                    getString(R.string.episode_count, persianDigits(series.presentEpisodes.size)))
-            }
+            val meta = card.findViewById<TextView>(R.id.meta)
+            meta.text = catalogMeta(series)
+            meta.visibility = if (meta.text.isNullOrEmpty()) View.INVISIBLE else View.VISIBLE
             val badge = card.findViewById<TextView>(R.id.badge)
             badge.visibility = if (series.importState == ImportState.DONE) View.GONE else View.VISIBLE
             badge.text = when (series.importState) {
@@ -117,18 +161,21 @@ class LibraryGridActivity : Activity() {
                 ImportState.ERROR -> series.importError ?: getString(R.string.import_error)
                 ImportState.DONE -> ""
             }
-            val episode = series.continueEpisode
-            val progress = card.findViewById<View>(R.id.progress)
-            val track = card.findViewById<View>(R.id.progressTrack)
-            val showProgress = episode != null && episode.durationMs > 0 && episode.lastPositionMs > 0 &&
-                !PlaybackRules.seriesWatched(series.episodes)
-            track.visibility = if (showProgress) View.VISIBLE else View.GONE
-            progress.visibility = if (showProgress) View.VISIBLE else View.GONE
-            if (showProgress && episode != null) {
-                val width = (270f * episode.lastPositionMs / episode.durationMs).toInt().coerceIn(4, 270)
-                progress.layoutParams = progress.layoutParams.apply { this.width = dp(width) }
-            }
             return card
+        }
+
+        private fun catalogMeta(series: LibrarySeries): String = if (series.isMovie) {
+            LibraryGridLayout.movieDurationMinutes(series.durationMinutes)
+                ?.let { getString(R.string.duration_minutes, persianDigits(it)) }
+                .orEmpty()
+        } else if (LibraryGridLayout.hasSeriesMeta(series.presentSeasonCount, series.presentEpisodes.size)) {
+            getString(
+                R.string.season_episode_meta,
+                getString(R.string.season_count, persianDigits(series.presentSeasonCount)),
+                getString(R.string.episode_count, persianDigits(series.presentEpisodes.size)),
+            )
+        } else {
+            ""
         }
     }
 

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/headerRoot"
     android:layout_width="match_parent"
     android:layout_height="@dimen/home_header_h"
@@ -7,38 +8,12 @@
     android:paddingHorizontal="@dimen/home_pad"
     android:layoutDirection="rtl">
 
-    <LinearLayout
+    <app.itv.prototype.ui.ItvLogoView
         android:id="@+id/brandLogo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="right|center_vertical"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:layoutDirection="ltr">
-
-        <TextView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:text="i"
-            android:textSize="17sp"
-            android:textColor="@color/bg"
-            android:fontFamily="sans-serif"
-            android:includeFontPadding="false"
-            android:gravity="center"
-            android:background="@drawable/bg_primary"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="TV"
-            android:textSize="22sp"
-            android:textColor="#FFFFFF"
-            android:fontFamily="sans-serif-medium"
-            android:includeFontPadding="false"
-            android:layout_marginStart="2dp"
-            android:textStyle="bold" />
-    </LinearLayout>
+        android:layout_gravity="left|center_vertical"
+        app:logoSize="@dimen/logo_size_home" />
 
     <LinearLayout
         android:id="@+id/navTabs"

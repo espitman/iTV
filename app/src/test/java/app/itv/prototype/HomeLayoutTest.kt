@@ -3,6 +3,7 @@ package app.itv.prototype
 import app.itv.prototype.ui.ImageSize
 import app.itv.prototype.ui.HomeLayout
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HomeLayoutTest {
@@ -11,6 +12,27 @@ class HomeLayoutTest {
         assertEquals(400, HomeLayout.rtlStartScrollX(rowWidth = 1200, viewportWidth = 800))
         assertEquals(0, HomeLayout.rtlStartScrollX(rowWidth = 400, viewportWidth = 800))
         assertEquals(420, HomeLayout.rtlStartScrollX(rowWidth = 1200, viewportWidth = 800, paddingLeft = 10, paddingRight = 10))
+    }
+
+    @Test
+    fun homeShelfCapsAtEightAndKeepsMoreOnScreen() {
+        val poster = 176
+        val gap = 16
+        val pad = 8
+        val more = 176
+        val tv1080 = 1792
+        val tv720 = 1152
+        val eightPlusMore = HomeLayout.shelfRowWidth(8, poster, gap, more)
+        assertEquals(8, HomeLayout.shelfVisibleCount(tv1080, poster, gap, pad, pad, more, 8))
+        assertEquals(8, HomeLayout.shelfVisibleCount(tv1080, poster, gap, pad, pad, more, 12))
+        assertTrue(eightPlusMore <= tv1080 - 2 * pad)
+        assertTrue(HomeLayout.shelfRowWidth(9, poster, gap, more) > tv1080 - 2 * pad)
+        assertEquals(4, HomeLayout.shelfVisibleCount(tv720, poster, gap, pad, pad, more, 8))
+        val fourPlusMore = HomeLayout.shelfRowWidth(4, poster, gap, more)
+        assertTrue(fourPlusMore <= tv720 - 2 * pad)
+        assertTrue(HomeLayout.shelfRowWidth(5, poster, gap, more) > tv720 - 2 * pad)
+        assertEquals(0, HomeLayout.shelfVisibleCount(20, poster, gap, pad, pad, more, 8))
+        assertEquals(3, HomeLayout.shelfVisibleCount(tv1080, poster, gap, pad, pad, more, 3))
     }
 
     @Test

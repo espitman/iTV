@@ -10,15 +10,17 @@ import org.junit.Test
 
 class HomeCatalogTest {
     @Test
-    fun homeShowsTenNewestPerTypeWhileGridKeepsAll() {
+    fun homeShowsEightNewestPerTypeWhileGridKeepsAll() {
         val items = (1L..15L).flatMap { number ->
             listOf(series(number, false), series(number + 100, true, number))
         }.reversed()
 
-        assertEquals((15L downTo 6L).toList(), HomeCatalog.recent(items, false).map { it.id })
-        assertEquals((115L downTo 106L).toList(), HomeCatalog.recent(items, true).map { it.id })
+        assertEquals((15L downTo 8L).toList(), HomeCatalog.recent(items, false).map { it.id })
+        assertEquals((115L downTo 108L).toList(), HomeCatalog.recent(items, true).map { it.id })
+        assertEquals(8, HomeCatalog.recent(items, false).size)
         assertEquals(15, HomeCatalog.all(items, false).size)
         assertEquals(15, HomeCatalog.all(items, true).size)
+        assertEquals((15L downTo 12L).toList(), HomeCatalog.recent(items, false, 4).map { it.id })
     }
 
     @Test

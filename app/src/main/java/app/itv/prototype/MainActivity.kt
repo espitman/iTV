@@ -154,8 +154,9 @@ class MainActivity : Activity() {
         }
 
         val continueItems = HomeCatalog.continueWatching(items)
-        val seriesItems = HomeCatalog.recent(items, false)
-        val movieItems = HomeCatalog.recent(items, true)
+        val shelfLimit = homeShelfLimit()
+        val seriesItems = HomeCatalog.recent(items, false, shelfLimit)
+        val movieItems = HomeCatalog.recent(items, true, shelfLimit)
         val signature = HomeLayout.catalogSignature(
             continueItems.map { it.id },
             seriesItems.map { it.id },
@@ -482,6 +483,23 @@ class MainActivity : Activity() {
         chip3.text = getString(R.string.episode_count, persianDigits(series.presentEpisodes.size))
         chip2.visibility = View.VISIBLE
         chip3.visibility = View.VISIBLE
+    }
+
+    private fun homeShelfLimit(): Int {
+        val poster = resources.getDimensionPixelSize(R.dimen.home_poster_w)
+        val gap = resources.getDimensionPixelSize(R.dimen.home_poster_gap)
+        val shelfPad = resources.getDimensionPixelSize(R.dimen.home_shelf_pad_h)
+        val outer = if (library.width > 0) library.width else resources.displayMetrics.widthPixels
+        val available = (outer - library.paddingStart - library.paddingEnd).coerceAtLeast(0)
+        return HomeLayout.shelfVisibleCount(
+            availableWidth = available,
+            posterWidth = poster,
+            gap = gap,
+            paddingStart = shelfPad,
+            paddingEnd = shelfPad,
+            moreWidth = poster,
+            maxCount = HomeCatalog.HOME_LIMIT,
+        ).coerceAtLeast(1)
     }
 
     private fun openSettings() {

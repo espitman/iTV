@@ -10,10 +10,10 @@
     <dimen name="home_hero_action_radius">6dp</dimen>
     <dimen name="home_continue_w">112dp</dimen>
     <dimen name="home_continue_h">63dp</dimen>
-    <dimen name="home_poster_w">76dp</dimen>
-    <dimen name="home_poster_h">114dp</dimen>
+    <dimen name="home_poster_w">88dp</dimen>
+    <dimen name="home_poster_h">132dp</dimen>
     <dimen name="home_continue_row_h">78dp</dimen>
-    <dimen name="home_poster_row_h">128dp</dimen>
+    <dimen name="home_poster_row_h">146dp</dimen>
     <dimen name="home_card_gap">8dp</dimen>
     <dimen name="home_poster_gap">8dp</dimen>
     <dimen name="home_card_radius">8dp</dimen>
@@ -24,4 +24,11 @@
     <dimen name="home_nav_h">30dp</dimen>
     <dimen name="home_action_h">34dp</dimen>
     <dimen name="home_heading_h">30dp</dimen>
+    <dimen name="logo_size_home">24dp</dimen>
+    <dimen name="logo_size_header">20dp</dimen>
+    <dimen name="catalog_pad">40dp</dimen>
+    <dimen name="catalog_header_h">56dp</dimen>
+    <dimen name="catalog_min_column">120dp</dimen>
+    <dimen name="catalog_title_block">44dp</dimen>
+    <dimen name="catalog_focus_pad">3dp</dimen>
 </resources>
