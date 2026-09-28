@@ -13,9 +13,31 @@ object HomeCatalog {
     fun all(items: List<LibrarySeries>, movies: Boolean): List<LibrarySeries> =
         items.asSequence()
             .filter { it.isMovie == movies }
-            .sortedWith(compareByDescending<LibrarySeries> { it.addedAt }.thenByDescending { it.id })
+            .sortedWith(newestFirst)
             .toList()
 
     fun recent(items: List<LibrarySeries>, movies: Boolean): List<LibrarySeries> =
         all(items, movies).take(HOME_LIMIT)
+
+    fun featured(items: List<LibrarySeries>): LibrarySeries? =
+        continueWatching(items).firstOrNull()
+            ?: recent(items, false).firstOrNull()
+            ?: recent(items, true).firstOrNull()
+            ?: items.firstOrNull()
+
+    fun search(items: List<LibrarySeries>, query: String): List<LibrarySeries> {
+        val needle = query.trim()
+        val filtered = if (needle.isEmpty()) {
+            items
+        } else {
+            items.filter { series ->
+                series.title.contains(needle, ignoreCase = true) ||
+                    series.sourceTitle.contains(needle, ignoreCase = true) ||
+                    series.localTitle.orEmpty().contains(needle, ignoreCase = true)
+            }
+        }
+        return filtered.sortedWith(newestFirst)
+    }
+
+    private val newestFirst = compareByDescending<LibrarySeries> { it.addedAt }.thenByDescending { it.id }
 }

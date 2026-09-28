@@ -1,10 +1,10 @@
 package app.itv.prototype.ui
 
 import android.graphics.Outline
+import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
-import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.TextView
 import app.itv.prototype.R
@@ -28,10 +28,20 @@ fun View.bindCardFocus() {
     isClickable = true
     if (this is ViewGroup) descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
     setOnFocusChangeListener { view, focused ->
-        view.animate().scaleX(1f).scaleY(1f)
-            .setDuration(120).start()
-        view.elevation = if (focused) 18f else 0f
-        if (focused) view.requestRectangleOnScreen(android.graphics.Rect(), false)
+        view.applyCinematicFocus(focused, 1f)
+    }
+}
+
+fun View.applyCinematicFocus(focused: Boolean, scale: Float = 1.06f) {
+    if (Build.VERSION.SDK_INT >= 26) defaultFocusHighlightEnabled = false
+    pivotX = width / 2f
+    pivotY = height / 2f
+    animate().scaleX(if (focused) scale else 1f).scaleY(if (focused) scale else 1f)
+        .setDuration(140).start()
+    elevation = if (focused) 18f else 0f
+    if (Build.VERSION.SDK_INT >= 28) {
+        outlineSpotShadowColor = context.getColor(R.color.cyan)
+        outlineAmbientShadowColor = context.getColor(R.color.focus_glow)
     }
 }
 
@@ -63,7 +73,13 @@ fun View.clipRound(radiusDp: Float) {
     clipToOutline = true
     outlineProvider = object : ViewOutlineProvider() {
         override fun getOutline(view: View, outline: Outline) {
-            outline.setRoundRect(0, 0, view.width, view.height, radiusDp * resources.displayMetrics.density)
+            val width = view.width.takeIf { it > 0 } ?: view.measuredWidth
+            val height = view.height.takeIf { it > 0 } ?: view.measuredHeight
+            if (width <= 0 || height <= 0) {
+                outline.setEmpty()
+                return
+            }
+            outline.setRoundRect(0, 0, width, height, radiusDp * resources.displayMetrics.density)
         }
     }
 }

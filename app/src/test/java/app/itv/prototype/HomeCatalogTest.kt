@@ -22,6 +22,24 @@ class HomeCatalogTest {
     }
 
     @Test
+    fun featuredPrefersContinueWatchingThenNewestSeries() {
+        val movie = series(9, true)
+        val unstarted = series(1, false)
+        val partial = series(2, false).copy(episodes = listOf(episode(2, 15_000, false)))
+        assertEquals(2L, HomeCatalog.featured(listOf(movie, unstarted, partial))?.id)
+        assertEquals(1L, HomeCatalog.featured(listOf(movie, unstarted))?.id)
+        assertEquals(9L, HomeCatalog.featured(listOf(movie))?.id)
+    }
+
+    @Test
+    fun searchMatchesLocalAndSourceTitles() {
+        val first = series(1, false).copy(sourceTitle = "Shahrzad", localTitle = "شهرزاد")
+        val second = series(2, true).copy(title = "فیلم نمونه")
+        assertEquals(listOf(1L), HomeCatalog.search(listOf(first, second), "شهر").map { it.id })
+        assertEquals(listOf(2L, 1L), HomeCatalog.search(listOf(first, second), "").map { it.id })
+    }
+
+    @Test
     fun continueWatchingIncludesStartedUnfinishedSeriesOnly() {
         val unstarted = series(1, false).copy(episodes = listOf(episode(1, 0, false)))
         val partial = series(2, false).copy(episodes = listOf(episode(2, 15_000, false)))

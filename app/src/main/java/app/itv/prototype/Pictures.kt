@@ -34,18 +34,18 @@ object Pictures {
         val resolved = episodeUrl(url)
         if (resolved == null) {
             target.tag = null
-            target.setImageDrawable(null)
-            placeholder?.let { target.setImageResource(it) }
+            placeholder?.let { target.setImageResource(it) } ?: target.setImageDrawable(null)
             return
         }
         if (target.tag == resolved && target.drawable != null) return
-        target.setImageDrawable(null)
         target.tag = resolved
         cache.get(resolved)?.let {
             target.setImageBitmap(it)
             return
         }
-        placeholder?.let { target.setImageResource(it) }
+        if (target.drawable == null) {
+            placeholder?.let { target.setImageResource(it) }
+        }
         worker.execute {
             val bitmap = runCatching { read(resolved) }.getOrNull() ?: return@execute
             cache.put(resolved, bitmap)

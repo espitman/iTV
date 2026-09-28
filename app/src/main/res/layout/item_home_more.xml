@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="@dimen/home_poster_w"
+    android:layout_height="@dimen/home_poster_h"
+    android:layout_marginEnd="@dimen/home_poster_gap"
+    android:padding="@dimen/home_focus_pad"
+    android:background="@drawable/bg_card_more"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:clickable="true"
+    android:descendantFocusability="blocksDescendants"
+    android:layoutDirection="rtl">
+
+    <TextView
+        android:id="@+id/moreText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/more"
+        android:textSize="13sp"
+        android:textColor="#C5D0D6"
+        android:fontFamily="@font/byekan_family"
+        android:includeFontPadding="false"
+        android:textStyle="bold" />
+</FrameLayout>
