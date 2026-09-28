@@ -3,7 +3,7 @@
     <dimen name="home_pad">32dp</dimen>
     <dimen name="home_header_h">48dp</dimen>
     <dimen name="home_hero_h">354dp</dimen>
-    <dimen name="home_hero_fade_h">156dp</dimen>
+    <dimen name="home_hero_fade_h">228dp</dimen>
     <dimen name="home_hero_copy">246dp</dimen>
     <dimen name="home_hero_copy_w">300dp</dimen>
     <dimen name="home_hero_title_h">48dp</dimen>

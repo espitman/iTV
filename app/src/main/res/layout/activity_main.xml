@@ -19,7 +19,7 @@
             android:id="@+id/heroFallback"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#0A1524" />
+            android:background="@color/bg" />
 
         <app.itv.prototype.ui.StableImageView
             android:id="@+id/backdrop"
@@ -34,11 +34,10 @@
             android:layout_height="match_parent"
             android:background="@drawable/scrim_hero" />
 
-        <View
+        <app.itv.prototype.ui.HeroBottomFadeView
             android:layout_width="match_parent"
             android:layout_height="@dimen/home_hero_fade_h"
-            android:layout_gravity="bottom"
-            android:background="@drawable/scrim_hero_bottom" />
+            android:layout_gravity="bottom" />
     </FrameLayout>
 
     <ScrollView
