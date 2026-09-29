@@ -26,17 +26,33 @@ object HomeCatalog {
             ?: items.firstOrNull()
 
     fun search(items: List<LibrarySeries>, query: String): List<LibrarySeries> {
-        val needle = query.trim()
-        val filtered = if (needle.isEmpty()) {
-            items
-        } else {
-            items.filter { series ->
-                series.title.contains(needle, ignoreCase = true) ||
-                    series.sourceTitle.contains(needle, ignoreCase = true) ||
-                    series.localTitle.orEmpty().contains(needle, ignoreCase = true)
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return items.sortedWith(newestFirst)
+        val needle = normalizeSearchKey(trimmed)
+        if (needle.isEmpty()) return emptyList()
+        return items.filter { series ->
+            searchTitles(series).any { normalizeSearchKey(it).startsWith(needle) }
+        }.sortedWith(newestFirst)
+    }
+
+    private fun searchTitles(series: LibrarySeries): Sequence<String> = sequenceOf(
+        series.title,
+        series.sourceTitle,
+        series.localTitle.orEmpty(),
+    ).filter { it.isNotBlank() }
+
+    private fun normalizeSearchKey(value: String): String = buildString(value.length) {
+        for (char in value) {
+            when (char) {
+                'ي', 'ى' -> append('ی')
+                'ك' -> append('ک')
+                'أ', 'إ', 'ٱ' -> append('ا')
+                'ة' -> append('ه')
+                'ؤ' -> append('و')
+                '\u200C', '\u200D', '\u0640', '\uFEFF' -> Unit
+                else -> if (!char.isWhitespace()) append(char.lowercaseChar())
             }
         }
-        return filtered.sortedWith(newestFirst)
     }
 
     private val newestFirst = compareByDescending<LibrarySeries> { it.addedAt }.thenByDescending { it.id }

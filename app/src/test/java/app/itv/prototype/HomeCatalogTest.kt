@@ -38,7 +38,48 @@ class HomeCatalogTest {
         val first = series(1, false).copy(sourceTitle = "Shahrzad", localTitle = "شهرزاد")
         val second = series(2, true).copy(title = "فیلم نمونه")
         assertEquals(listOf(1L), HomeCatalog.search(listOf(first, second), "شهر").map { it.id })
+        assertEquals(listOf(1L), HomeCatalog.search(listOf(first, second), "shahr").map { it.id })
+        assertEquals(emptyList<Long>(), HomeCatalog.search(listOf(first, second), "zad").map { it.id })
         assertEquals(listOf(2L, 1L), HomeCatalog.search(listOf(first, second), "").map { it.id })
+    }
+
+    @Test
+    fun searchIncludesOnlyTitlesThatStartWithTheQuery() {
+        val lizard = series(1, true).copy(title = "مارمولک", sourceTitle = "مارمولک")
+        val chosen = series(2, false).copy(title = "مختارنامه", sourceTitle = "مختارنامه")
+        val shah = series(3, false).copy(title = "شاهزاده", sourceTitle = "شاهزاده")
+        assertEquals(listOf(1L), HomeCatalog.search(listOf(lizard, chosen, shah), "مار").map { it.id })
+        assertEquals(listOf(3L), HomeCatalog.search(listOf(lizard, chosen, shah), "ش").map { it.id })
+    }
+
+    @Test
+    fun searchIgnoresLettersThatAppearLaterInTheTitle() {
+        val brighter = series(1, false).copy(
+            title = "روشن‌تر از خاموشی",
+            sourceTitle = "روشن تر از خاموشی",
+            description = "شروع داستان",
+            episodes = listOf(episode(1, 0, false).copy(title = "شب اول")),
+        )
+        val shah = series(2, false).copy(title = "شهرزاد", sourceTitle = "شهرزاد")
+        assertEquals(listOf(2L), HomeCatalog.search(listOf(brighter, shah), "ش").map { it.id })
+        assertEquals(emptyList<Long>(), HomeCatalog.search(listOf(brighter), "خاموش").map { it.id })
+        assertEquals(emptyList<Long>(), HomeCatalog.search(listOf(brighter), "شروع").map { it.id })
+        assertEquals(emptyList<Long>(), HomeCatalog.search(listOf(brighter), "شب").map { it.id })
+        assertEquals(listOf(1L), HomeCatalog.search(listOf(brighter), "روشن").map { it.id })
+        assertEquals(listOf(1L), HomeCatalog.search(listOf(brighter), "روشن تر").map { it.id })
+    }
+
+    @Test
+    fun searchTreatsOrdinaryPersianLetterVariantsAsTheSamePrefix() {
+        val arabicYeh = series(1, false).copy(title = "یک شب", sourceTitle = "يك شب")
+        val arabicKaf = series(2, true).copy(title = "کتاب", sourceTitle = "كتاب")
+        val hamza = series(3, false).copy(title = "احمد", sourceTitle = "أحمد")
+        assertEquals(listOf(1L), HomeCatalog.search(listOf(arabicYeh, arabicKaf), "ي").map { it.id })
+        assertEquals(listOf(2L), HomeCatalog.search(listOf(arabicYeh, arabicKaf), "ك").map { it.id })
+        assertEquals(listOf(3L), HomeCatalog.search(listOf(hamza), "ا").map { it.id })
+        val renamed = series(4, false).copy(title = "نام نمایشی", sourceTitle = "Shahrzad", localTitle = "سریال شهرزاد")
+        assertEquals(emptyList<Long>(), HomeCatalog.search(listOf(renamed), "شهر").map { it.id })
+        assertEquals(listOf(4L), HomeCatalog.search(listOf(renamed), "shahr").map { it.id })
     }
 
     @Test

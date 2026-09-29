@@ -52,6 +52,9 @@
     <dimen name="credit_halo">120dp</dimen>
     <dimen name="credit_gap">4dp</dimen>
     <dimen name="credit_row_bottom">28dp</dimen>
+    <dimen name="search_bar_h">46dp</dimen>
+    <dimen name="search_title_block">52dp</dimen>
+    <dimen name="search_min_column">96dp</dimen>
     <dimen name="settings_pad">48dp</dimen>
     <dimen name="settings_panel_w">600dp</dimen>
     <dimen name="settings_qr">104dp</dimen>

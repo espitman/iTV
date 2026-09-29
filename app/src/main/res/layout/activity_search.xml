@@ -3,65 +3,206 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
-    android:layoutDirection="rtl"
-    android:clipChildren="false">
+    android:clipChildren="false"
+    android:layoutDirection="rtl">
 
     <include layout="@layout/view_home_header" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipChildren="false"
         android:orientation="vertical"
-        android:paddingTop="@dimen/home_header_h"
-        android:clipChildren="false">
+        android:paddingHorizontal="@dimen/home_pad"
+        android:paddingTop="@dimen/home_header_h">
 
-        <EditText
-            android:id="@+id/query"
+        <LinearLayout
+            android:id="@+id/searchBar"
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_marginHorizontal="@dimen/home_pad"
-            android:layout_marginTop="12dp"
+            android:layout_height="@dimen/search_bar_h"
+            android:layout_marginTop="14dp"
             android:background="@drawable/bg_search_field"
-            android:fontFamily="@font/vazirmatn_family"
-            android:hint="@string/search_hint"
-            android:imeOptions="actionSearch"
-            android:includeFontPadding="false"
-            android:inputType="text"
-            android:paddingHorizontal="16dp"
-            android:textColor="@color/text"
-            android:textColorHint="@color/muted"
-            android:textSize="15sp"
-            android:focusable="true"
-            android:focusableInTouchMode="true" />
+            android:clipChildren="false"
+            android:gravity="center_vertical"
+            android:layoutDirection="rtl"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="8dp">
 
-        <TextView
-            android:id="@+id/searchEmpty"
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@string/nav_search"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_search" />
+
+            <EditText
+                android:id="@+id/query"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:fontFamily="@font/vazirmatn_family"
+                android:gravity="right|center_vertical"
+                android:hint="@string/search_hint"
+                android:imeOptions="actionSearch|flagNoExtractUi|flagNoFullscreen"
+                android:importantForAutofill="no"
+                android:includeFontPadding="false"
+                android:inputType="text"
+                android:maxLines="1"
+                android:padding="0dp"
+                android:singleLine="true"
+                android:textColor="@color/text"
+                android:textColorHint="@color/muted"
+                android:textSize="16sp" />
+
+            <ImageButton
+                android:id="@+id/clearQuery"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_search_chip"
+                android:contentDescription="@string/search_clear"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_search_clear"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/voiceSearch"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_search_chip"
+                android:drawableStart="@drawable/ic_search_mic"
+                android:drawablePadding="6dp"
+                android:elevation="0dp"
+                android:fontFamily="@font/vazirmatn_family"
+                android:includeFontPadding="false"
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="0dp"
+                android:stateListAnimator="@null"
+                android:text="@string/search_voice"
+                android:textAllCaps="false"
+                android:textColor="@color/text"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/resultsChrome"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/home_pad"
-            android:layout_marginTop="28dp"
-            android:fontFamily="@font/vazirmatn_family"
-            android:includeFontPadding="false"
-            android:text="@string/search_empty"
-            android:textColor="@color/muted"
-            android:textSize="15sp"
-            android:visibility="gone" />
+            android:layout_marginTop="14dp"
+            android:visibility="gone"
+            android:clipChildren="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <GridView
-            android:id="@+id/results"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical|start"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/resultsTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/vazirmatn_family"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:maxWidth="460dp"
+                    android:textColor="@color/text"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/resultCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_search_count"
+                    android:fontFamily="@font/vazirmatn_family"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:textColor="@color/muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:clipChildren="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/filterAll"
+                    style="@style/Widget.ITV.SearchChip" />
+
+                <Button
+                    android:id="@+id/filterSeries"
+                    style="@style/Widget.ITV.SearchChip"
+                    android:layout_marginStart="8dp" />
+
+                <Button
+                    android:id="@+id/filterMovies"
+                    style="@style/Widget.ITV.SearchChip"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:layout_marginTop="12dp"
             android:layout_weight="1"
-            android:layout_marginTop="16dp"
-            android:paddingHorizontal="@dimen/home_pad"
-            android:paddingBottom="28dp"
-            android:clipToPadding="false"
-            android:clipChildren="false"
-            android:columnWidth="@dimen/home_poster_w"
-            android:horizontalSpacing="@dimen/home_poster_gap"
-            android:verticalSpacing="12dp"
-            android:numColumns="auto_fit"
-            android:stretchMode="spacingWidthUniform"
-            android:scrollbars="none" />
+            android:clipChildren="false">
+
+            <ScrollView
+                android:id="@+id/resultsScroll"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:descendantFocusability="afterDescendants"
+                android:fillViewport="true"
+                android:focusable="false"
+                android:paddingBottom="28dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/results"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:layoutDirection="rtl"
+                    android:orientation="vertical" />
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/searchEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="@font/vazirmatn_family"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="@string/search_empty"
+                android:textColor="@color/muted"
+                android:textSize="16sp"
+                android:visibility="gone" />
+        </FrameLayout>
     </LinearLayout>
 </FrameLayout>
