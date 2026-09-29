@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bg"
-    android:orientation="vertical"
-    android:layoutDirection="rtl"
-    android:clipChildren="true"
-    android:clipToPadding="true">
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/bg"
+        android:orientation="vertical"
+        android:layoutDirection="rtl"
+        android:clipChildren="true"
+        android:clipToPadding="true">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -76,13 +79,6 @@
                 android:background="@drawable/bg_catalog_chip"
                 android:focusable="false" />
         </LinearLayout>
-
-        <app.itv.prototype.ui.ItvLogoView
-            android:id="@+id/brandLogo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|center_vertical"
-            app:logoSize="@dimen/logo_size_home" />
     </FrameLayout>
 
     <GridView
@@ -108,4 +104,7 @@
         android:focusableInTouchMode="true"
         android:descendantFocusability="afterDescendants"
         android:nextFocusUp="@id/navBack" />
-</LinearLayout>
+    </LinearLayout>
+
+    <include layout="@layout/view_screen_logo" />
+</FrameLayout>

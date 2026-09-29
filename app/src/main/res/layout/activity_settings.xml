@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_settings_screen"
-    android:clipChildren="false"
-    android:clipToPadding="false"
-    android:layoutDirection="rtl"
-    android:orientation="vertical"
-    android:paddingHorizontal="@dimen/settings_pad"
-    android:paddingTop="22dp"
-    android:paddingBottom="18dp">
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_settings_screen"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:layoutDirection="rtl"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/settings_pad"
+        android:paddingTop="22dp"
+        android:paddingBottom="18dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -57,15 +60,6 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <app.itv.prototype.ui.ItvLogoView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:logoSize="@dimen/logo_size_home" />
     </LinearLayout>
 
     <FrameLayout
@@ -275,4 +269,7 @@
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>
-</LinearLayout>
+    </LinearLayout>
+
+    <include layout="@layout/view_screen_logo" />
+</FrameLayout>

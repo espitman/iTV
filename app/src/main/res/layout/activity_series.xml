@@ -252,4 +252,6 @@
                 android:orientation="horizontal" />
         </app.itv.prototype.ui.RtlShelfScrollView>
     </LinearLayout>
+
+    <include layout="@layout/view_screen_logo" />
 </FrameLayout>
