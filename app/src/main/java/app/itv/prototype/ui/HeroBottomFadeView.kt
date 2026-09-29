@@ -45,3 +45,38 @@ class HeroBottomFadeView @JvmOverloads constructor(
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
     }
 }
+
+/** Right-edge wash so a left-anchored still dies before the copy column. */
+class HeroRightFadeView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0,
+) : View(context, attrs, defStyleAttr) {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
+        isDither = true
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        if (w <= 0 || h <= 0) return
+        paint.shader = LinearGradient(
+            0f,
+            0f,
+            w.toFloat(),
+            0f,
+            intArrayOf(
+                0x00080F14.toInt(),
+                0x14080F14.toInt(),
+                0x4A080F14.toInt(),
+                0x9A080F14.toInt(),
+                0xE0080F14.toInt(),
+                0xFF080F14.toInt(),
+            ),
+            floatArrayOf(0f, 0.18f, 0.40f, 0.62f, 0.82f, 1f),
+            Shader.TileMode.CLAMP,
+        )
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+    }
+}

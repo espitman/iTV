@@ -37,4 +37,51 @@ class MovieCatalogTest {
         assertFalse(client("SERIAL").loadProductSeasons("0xc20b845").first.isMovie)
         assertFalse(client("").loadProductSeasons("0xc20b845").first.isMovie)
     }
+
+    @Test fun movieCreditsAreIndividualPeopleWithResolvedPortraits() {
+        val avatar = "/sites/default/files/images/biography/avatar/sample.jpg"
+        val content = JSONObject()
+            .put("content_type", "MOVIE")
+            .put("director", JSONArray().put(credit("رخشان بنی‌اعتماد", "", avatar)))
+            .put("writer", JSONArray().put(credit("فرید مصطفوی", "نویسنده", "https://cdn.example/writer.jpg")))
+            .put("actors", JSONArray()
+                .put(credit("مهتاب کرامتی", "بازیگر"))
+                .put(credit("محمدرضا فروتن", "بازیگر", "/sites/default/files/images/biography/avatar/1399/parviz parastuyi.jpg"))
+                .put(JSONObject().put("person", JSONObject()).put("role", JSONObject().put("title", "بازیگر"))))
+            .put("producer", JSONArray().put(credit("جهانگیر کوثری", "تهیه‌کننده")))
+            .put("composer", JSONArray().put(credit("کریستف رضاعی", "آهنگساز")))
+            .put("cameraman", JSONArray().put(credit("مرتضی پورصمدی", "فیلمبردار")))
+            .put("editor", JSONArray().put(credit("هایده صفی‌یاری", "تدوین‌گر")))
+        val people = app.itv.prototype.data.CatalogMapper.movieCredits(content)
+        assertEquals(
+            listOf(
+                "رخشان بنی‌اعتماد",
+                "فرید مصطفوی",
+                "مهتاب کرامتی",
+                "محمدرضا فروتن",
+                "جهانگیر کوثری",
+                "مرتضی پورصمدی",
+                "هایده صفی‌یاری",
+                "کریستف رضاعی",
+            ),
+            people.map { it.name },
+        )
+        assertEquals(
+            listOf("کارگردان", "نویسنده", "بازیگر", "بازیگر", "تهیه‌کننده", "فیلمبردار", "تدوین‌گر", "آهنگساز"),
+            people.map { it.role },
+        )
+        assertEquals("https://gateway.telewebion.net$avatar", people[0].imageUrl)
+        assertEquals("https://cdn.example/writer.jpg", people[1].imageUrl)
+        assertNull(people[2].imageUrl)
+        assertEquals(
+            "https://gateway.telewebion.net/sites/default/files/images/biography/avatar/1399/parviz%20parastuyi.jpg",
+            people[3].imageUrl,
+        )
+        assertTrue(app.itv.prototype.data.CatalogMapper.movieCredits(JSONObject().put("content_type", "SERIAL").put("actors", JSONArray().put(credit("کسی", "بازیگر")))).isEmpty())
+        assertTrue(app.itv.prototype.data.CatalogMapper.movieCredits(JSONObject().put("content_type", "MOVIE")).isEmpty())
+    }
+
+    private fun credit(name: String, role: String, image: String? = null) = JSONObject()
+        .put("person", JSONObject().put("title", name).apply { if (image != null) put("image", image) })
+        .put("role", JSONObject().put("title", role))
 }

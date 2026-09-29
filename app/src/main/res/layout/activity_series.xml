@@ -1,2 +1,255 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/bg" android:layoutDirection="rtl" android:orientation="vertical"><include layout="@layout/view_header"/><FrameLayout android:id="@+id/seriesHero" android:layout_width="match_parent" android:layout_height="246dp"><app.itv.prototype.ui.StableImageView android:id="@+id/backdrop" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" android:adjustViewBounds="false"/><View android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/scrim_hero"/><ImageView android:id="@+id/poster" android:layout_width="1dp" android:layout_height="1dp" android:visibility="gone"/><LinearLayout android:layout_width="440dp" android:layout_height="match_parent" android:layout_gravity="right" android:orientation="vertical" android:gravity="center_vertical|right" android:paddingEnd="22dp" android:paddingStart="48dp"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/kind" android:text="" android:textSize="11sp" android:textColor="@color/cyan" android:fontFamily="@font/byekan_family" android:includeFontPadding="false" /><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/title" android:text="" android:textSize="29sp" android:textColor="@color/text" android:fontFamily="@font/byekan_family" android:includeFontPadding="false" android:textStyle="bold" android:layout_marginTop="12dp" android:maxLines="1" android:ellipsize="end"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:id="@+id/description" android:text="" android:textSize="12sp" android:textColor="@color/muted" android:fontFamily="@font/byekan_family" android:includeFontPadding="false" android:layout_marginTop="12dp" android:maxLines="2" android:ellipsize="end"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/meta" android:text="" android:textSize="10sp" android:textColor="@color/text" android:fontFamily="@font/byekan_family" android:includeFontPadding="false" android:layout_marginTop="14dp"/><LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp"><Button android:id="@+id/play" android:layout_width="wrap_content" android:layout_height="30dp" android:minHeight="0dp" android:minWidth="0dp" android:paddingHorizontal="12dp" android:paddingVertical="0dp" android:text="پخش قسمت اول  ▶" android:textSize="12sp" android:background="@drawable/bg_primary" android:textColor="@color/primary_text" android:focusable="true" android:focusableInTouchMode="true" /><Button android:id="@+id/showEpisodes" android:layout_width="wrap_content" android:layout_height="30dp" android:minHeight="0dp" android:minWidth="0dp" android:paddingHorizontal="12dp" android:paddingVertical="0dp" android:text="فهرست قسمت‌ها  ↓" android:textSize="12sp" android:background="@drawable/bg_button" android:textColor="@color/button_text" android:focusable="true" android:focusableInTouchMode="true" android:layout_marginStart="8dp"/></LinearLayout></LinearLayout></FrameLayout><LinearLayout android:id="@+id/episodeSection" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:paddingHorizontal="48dp" android:paddingTop="12dp"><LinearLayout android:layout_width="match_parent" android:layout_height="36dp" android:gravity="center_vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/episodesHeading" android:text="قسمت‌ها" android:textSize="18sp" android:textColor="@color/text" android:fontFamily="@font/byekan_family" android:includeFontPadding="false" android:textStyle="bold"/><View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/><HorizontalScrollView android:id="@+id/seasonScroller" android:layout_width="wrap_content" android:layout_height="34dp" android:focusable="false" android:scrollbars="none"><LinearLayout android:id="@+id/seasons" android:layout_width="wrap_content" android:layout_height="match_parent" android:orientation="horizontal"/></HorizontalScrollView></LinearLayout><HorizontalScrollView android:id="@+id/episodeScroller" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:focusable="false" android:scrollbars="none" android:clipChildren="false"><LinearLayout android:id="@+id/episodes" android:layout_width="wrap_content" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="top" android:paddingTop="6dp" android:clipChildren="false"/></HorizontalScrollView></LinearLayout></LinearLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/seriesRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:clipChildren="false"
+    android:layoutDirection="rtl">
+
+    <FrameLayout
+        android:id="@+id/seriesHero"
+        android:layout_width="@dimen/series_hero_w"
+        android:layout_height="@dimen/series_hero_h"
+        android:layout_gravity="top|left"
+        android:layoutDirection="ltr"
+        android:clipChildren="true">
+
+        <app.itv.prototype.ui.StableImageView
+            android:id="@+id/backdrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="false"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop" />
+
+        <app.itv.prototype.ui.HeroRightFadeView
+            android:layout_width="@dimen/series_hero_right_fade_w"
+            android:layout_height="match_parent"
+            android:layout_gravity="right" />
+
+        <app.itv.prototype.ui.HeroBottomFadeView
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/series_hero_fade_h"
+            android:layout_gravity="bottom" />
+
+        <ImageView
+            android:id="@+id/poster"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            android:contentDescription="@null"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="@dimen/series_copy_w"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:clipChildren="false"
+        android:gravity="right"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/series_copy_top"
+        android:paddingStart="24dp"
+        android:paddingEnd="@dimen/series_pad_end">
+
+        <TextView
+            android:id="@+id/kind"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/vazirmatn_family"
+            android:includeFontPadding="false"
+            android:textColor="@color/cyan"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/vazirmatn_family"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/text"
+            android:textSize="34sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/meta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:fontFamily="@font/vazirmatn_family"
+            android:includeFontPadding="false"
+            android:textColor="@color/text"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/vazirmatn_family"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="1.2"
+            android:maxLines="3"
+            android:textColor="@color/muted"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/play"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/series_play_h"
+                android:background="@drawable/bg_series_play"
+                android:drawablePadding="8dp"
+                android:drawableStart="@drawable/ic_play_tiny"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:fontFamily="@font/vazirmatn_family"
+                android:includeFontPadding="false"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="0dp"
+                android:text="@string/continue_watch"
+                android:textColor="@color/primary_text"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/showEpisodes"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/series_play_h"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_button"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:fontFamily="@font/vazirmatn_family"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="12dp"
+                android:text="@string/episodes_heading"
+                android:textColor="@color/button_text"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/episodeSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:clipChildren="false"
+        android:orientation="vertical"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        android:paddingBottom="@dimen/series_episode_bottom">
+
+        <TextView
+            android:id="@+id/episodesHeading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/vazirmatn_family"
+            android:includeFontPadding="false"
+            android:text="@string/episodes_heading"
+            android:textColor="@color/text"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <app.itv.prototype.ui.RtlShelfScrollView
+            android:id="@+id/seasonScroller"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/series_chip_h"
+            android:clipToPadding="false"
+            android:paddingStart="@dimen/series_pad_start"
+            android:paddingEnd="@dimen/series_pad_end"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/seasons"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" />
+        </app.itv.prototype.ui.RtlShelfScrollView>
+
+        <app.itv.prototype.ui.RtlShelfScrollView
+            android:id="@+id/episodeScroller"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingStart="@dimen/series_pad_start"
+            android:paddingEnd="@dimen/series_pad_end"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/episodes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:gravity="top"
+                android:orientation="horizontal" />
+        </app.itv.prototype.ui.RtlShelfScrollView>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/movieCreditSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="@dimen/credit_row_bottom"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/creditHeading"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/vazirmatn_family"
+            android:includeFontPadding="false"
+            android:paddingStart="@dimen/series_pad_start"
+            android:paddingEnd="@dimen/series_pad_end"
+            android:paddingBottom="6dp"
+            android:text="@string/credit_heading"
+            android:textAlignment="viewStart"
+            android:textColor="@color/text"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <app.itv.prototype.ui.RtlShelfScrollView
+            android:id="@+id/movieCredits"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingStart="@dimen/series_pad_start"
+            android:paddingEnd="@dimen/series_pad_end"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/creditRows"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="top"
+                android:layoutDirection="rtl"
+                android:orientation="horizontal" />
+        </app.itv.prototype.ui.RtlShelfScrollView>
+    </LinearLayout>
+</FrameLayout>

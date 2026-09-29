@@ -2,10 +2,10 @@ package app.itv.prototype.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
-import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -14,7 +14,9 @@ import app.itv.prototype.Pictures
 import app.itv.prototype.R
 import app.itv.prototype.core.LibraryEpisode
 import app.itv.prototype.core.LibrarySeries
-import app.itv.prototype.core.PlaybackRules
+import app.itv.prototype.core.MovieCreditPerson
+import app.itv.prototype.core.SeriesDetail
+import app.itv.prototype.core.SourceKind
 import app.itv.prototype.core.persianClock
 import app.itv.prototype.core.persianDigits
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +25,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SeriesActivity : Activity() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -33,18 +36,22 @@ class SeriesActivity : Activity() {
     private var focusedSeason: Int? = null
     private var focusedEpisodeId: String? = null
     private var focusOnPlay = false
-    private var focusOnBack = false
+    private var creditsFor: String? = null
+    private var creditJob: Job? = null
+    private var focusedCreditIndex: Int? = null
     private lateinit var title: TextView
     private lateinit var kind: TextView
     private lateinit var meta: TextView
     private lateinit var description: TextView
     private lateinit var play: Button
-    private lateinit var back: Button
     private lateinit var poster: ImageView
     private lateinit var seasons: LinearLayout
     private lateinit var episodes: LinearLayout
-    private lateinit var seasonScroller: HorizontalScrollView
-    private lateinit var episodeScroller: HorizontalScrollView
+    private lateinit var seasonScroller: RtlShelfScrollView
+    private lateinit var episodeScroller: RtlShelfScrollView
+    private lateinit var creditSection: View
+    private lateinit var creditScroller: RtlShelfScrollView
+    private lateinit var creditRows: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +62,6 @@ class SeriesActivity : Activity() {
         meta = findViewById(R.id.meta)
         description = findViewById(R.id.description)
         play = findViewById(R.id.play)
-        back = findViewById(R.id.navHome)
         poster = findViewById(R.id.poster)
         seasons = findViewById(R.id.seasons)
         episodes = findViewById(R.id.episodes)
@@ -63,12 +69,13 @@ class SeriesActivity : Activity() {
         episodeScroller = findViewById(R.id.episodeScroller)
         seasonScroller.disableSelfFocus()
         episodeScroller.disableSelfFocus()
+        creditSection = findViewById(R.id.movieCreditSection)
+        creditScroller = findViewById(R.id.movieCredits)
+        creditRows = findViewById(R.id.creditRows)
+        creditScroller.disableSelfFocus()
         play.bindFocusTint()
-        back.bindFocusTint()
         play.ensureFocusId()
-        back.ensureFocusId()
-        back.nextFocusDownId = play.id
-        play.nextFocusUpId = back.id
+        play.nextFocusUpId = View.NO_ID
         play.setOnFocusChangeListener { view, focused ->
             val button = view as Button
             button.setTextColor(getColor(R.color.bg))
@@ -76,20 +83,9 @@ class SeriesActivity : Activity() {
                 .setDuration(110).start()
             if (focused) {
                 focusOnPlay = true
-                focusOnBack = false
                 focusedEpisodeId = null
             }
         }
-        back.setOnFocusChangeListener { view, focused ->
-            val button = view as Button
-            button.setTextColor(getColor(R.color.text))
-            if (focused) {
-                focusOnBack = true
-                focusOnPlay = false
-            }
-        }
-        back.setOnClickListener { finish() }
-        findViewById<Button>(R.id.settings).apply { bindFocusTint(); setOnClickListener { startActivity(Intent(this@SeriesActivity, SettingsActivity::class.java)) } }
         findViewById<Button>(R.id.showEpisodes).apply {
             bindFocusTint()
             setOnClickListener { episodes.getChildAt(0)?.requestFocus() }
@@ -126,16 +122,21 @@ class SeriesActivity : Activity() {
     private fun bind(series: LibrarySeries) {
         rememberSeriesFocus()
         title.text = series.title
-        kind.text = if (series.isMovie) "فیلم سینمایی" else if (series.presentSeasonCount > 1) "سریال چندفصلی" else "سریال"
-        meta.text = if (series.isMovie) "فیلم سینمایی · ${persianDigits(series.durationMinutes)} دقیقه" else getString(
-            R.string.season_episode_meta,
-            getString(R.string.season_count, persianDigits(series.presentSeasonCount)),
-            getString(R.string.episode_count, persianDigits(series.presentEpisodes.size)),
-        )
-        description.maxLines = if (series.isMovie) 4 else 2
+        kind.text = if (series.isMovie) getString(R.string.hero_kind_movie) else ""
+        kind.visibility = if (series.isMovie) View.VISIBLE else View.GONE
+        meta.text = if (series.isMovie) {
+            getString(R.string.duration_minutes, persianDigits(series.durationMinutes))
+        } else {
+            getString(R.string.season_count, persianDigits(series.presentSeasonCount))
+        }
+        description.maxLines = if (series.isMovie) 6 else 3
         findViewById<View>(R.id.episodeSection).visibility = if (series.isMovie) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.showEpisodes).visibility = if (series.isMovie) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.seriesHero).layoutParams = findViewById<View>(R.id.seriesHero).layoutParams.apply { height = ((if (series.isMovie) 430 else 246) * resources.displayMetrics.density).toInt() }
+        if (series.isMovie && series.kind == SourceKind.PRODUCT) {
+            loadMovieCredits(series.sourceId)
+        } else {
+            hideMovieCredits()
+        }
+        findViewById<View>(R.id.showEpisodes).visibility = View.GONE
         description.text = series.description.orEmpty()
         description.visibility = if (series.description.isNullOrBlank()) View.GONE else View.VISIBLE
         val backdrop = findViewById<ImageView>(R.id.backdrop)
@@ -149,47 +150,139 @@ class SeriesActivity : Activity() {
         )
         val continueEp = series.continueEpisode
         play.isEnabled = continueEp != null
-        play.text = when {
-            continueEp == null -> getString(R.string.play_first)
-            continueEp.lastPositionMs > PlaybackRules.RESUME_THRESHOLD_MS -> getString(R.string.continue_watch)
-            series.isMovie -> "پخش فیلم"
-            else -> getString(R.string.play_episode, continueEp.label())
+        play.text = when (SeriesDetail.playAction(series.isMovie, continueEp)) {
+            SeriesDetail.PlayAction.PLAY_FIRST -> getString(R.string.play_first)
+            SeriesDetail.PlayAction.PLAY_MOVIE -> getString(R.string.play_movie)
+            SeriesDetail.PlayAction.CONTINUE_EPISODE ->
+                if (series.isMovie || continueEp == null) {
+                    getString(R.string.continue_watch)
+                } else {
+                    getString(R.string.continue_watch_episode, continueEp.label())
+                }
+            SeriesDetail.PlayAction.PLAY_EPISODE ->
+                getString(R.string.play_episode, continueEp?.label().orEmpty())
         }
         play.setOnClickListener { continueEp?.let(::openPlayer) }
-        findViewById<View>(R.id.episodesHeading).visibility = if (series.isMovie) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.episodesHeading).visibility = View.GONE
         episodeScroller.visibility = if (series.isMovie) View.GONE else View.VISIBLE
         val seasonNumbers = series.presentEpisodes.map { it.seasonNumber }.distinct()
-        val multi = seasonNumbers.size > 1
-        seasonScroller.visibility = if (multi) View.VISIBLE else View.GONE
-        if (!multi) selectedSeason = seasonNumbers.singleOrNull()
-        if (selectedSeason == null || selectedSeason !in seasonNumbers) {
-            selectedSeason = continueEp?.seasonNumber ?: seasonNumbers.firstOrNull()
-        }
+        seasonScroller.visibility =
+            if (SeriesDetail.showSeasonChips(series.isMovie, seasonNumbers.size)) View.VISIBLE else View.GONE
+        selectedSeason = SeriesDetail.selectedSeason(seasonNumbers, selectedSeason, continueEp?.seasonNumber)
         val seasonViews = bindSeasons(seasonNumbers, series)
         val visibleEpisodes = series.presentEpisodes.filter { selectedSeason == null || it.seasonNumber == selectedSeason }
         val episodeViews = bindEpisodes(if (series.isMovie) emptyList() else visibleEpisodes)
         wireSeriesFocus(seasonViews, episodeViews)
+        if (series.isMovie) wireCreditFocus(creditCards())
         restoreSeriesFocus(seasonViews, episodeViews)
+    }
+
+    private fun creditCards(): List<View> =
+        (0 until creditRows.childCount).map { creditRows.getChildAt(it) }
+
+    private fun hideMovieCredits() {
+        creditJob?.cancel()
+        creditsFor = null
+        focusedCreditIndex = null
+        creditRows.removeAllViews()
+        setCreditSectionVisible(false)
+    }
+
+    private fun loadMovieCredits(contentId: String) {
+        if (creditsFor == contentId) return
+        creditsFor = contentId
+        focusedCreditIndex = null
+        creditJob?.cancel()
+        creditRows.removeAllViews()
+        setCreditSectionVisible(false)
+        creditJob = scope.launch {
+            val people = withContext(Dispatchers.IO) {
+                runCatching { ItvApplication.instance.telewebion.loadMovieCredits(contentId) }
+                    .getOrDefault(emptyList())
+            }
+            if (creditsFor != contentId) return@launch
+            showMovieCredits(people)
+        }
+    }
+
+    private fun showMovieCredits(people: List<MovieCreditPerson>) {
+        creditRows.removeAllViews()
+        if (people.isEmpty()) {
+            setCreditSectionVisible(false)
+            return
+        }
+        val cards = people.mapIndexed { index, person ->
+            val card = layoutInflater.inflate(R.layout.item_credit, creditRows, false)
+            card.ensureFocusId()
+            if (Build.VERSION.SDK_INT >= 26) card.defaultFocusHighlightEnabled = false
+            card.setTag(R.id.creditRows, index)
+            card.contentDescription = person.name
+            card.findViewById<TextView>(R.id.creditName).text = person.name
+            card.findViewById<TextView>(R.id.creditRole).text = person.role
+            val portrait = card.findViewById<ImageView>(R.id.creditPortrait)
+            portrait.adjustViewBounds = false
+            portrait.scaleType = ImageView.ScaleType.CENTER_CROP
+            card.findViewById<View>(R.id.creditPortraitFrame).clipOval()
+            portrait.clipOval()
+            val focus = card.findViewById<View>(R.id.creditFocus)
+            val halo = card.findViewById<View>(R.id.creditHalo)
+            focus.isSelected = false
+            halo.isSelected = false
+            card.setOnFocusChangeListener { view, focused ->
+                if (Build.VERSION.SDK_INT >= 26) view.defaultFocusHighlightEnabled = false
+                focus.isSelected = focused
+                halo.isSelected = focused
+                if (focused) {
+                    focusedCreditIndex = index
+                    focusOnPlay = false
+                    focusedEpisodeId = null
+                    focusedSeason = null
+                    creditScroller.reveal(view, true)
+                }
+            }
+            creditRows.addView(card)
+            Pictures.load(person.imageUrl, portrait, R.drawable.ic_credit_fallback)
+            card
+        }
+        setCreditSectionVisible(true)
+        wireCreditFocus(cards)
+    }
+
+    private fun setCreditSectionVisible(visible: Boolean) {
+        val visibility = if (visible) View.VISIBLE else View.GONE
+        creditSection.visibility = visibility
+        creditScroller.visibility = visibility
+    }
+
+    private fun wireCreditFocus(cards: List<View>) {
+        if (cards.isEmpty() || creditScroller.visibility != View.VISIBLE) return
+        wireRtlRow(cards)
+        val first = cards.first()
+        play.nextFocusDownId = first.id
+        cards.forEach { card ->
+            card.nextFocusUpId = play.id
+            card.nextFocusDownId = View.NO_ID
+        }
+        creditScroller.pinToStart = focusedCreditIndex == null
+        if (focusedCreditIndex == null) scrollRowToStart(creditScroller)
     }
 
     private fun rememberSeriesFocus() {
         if (!initialFocusApplied) return
         when (val focused = currentFocus) {
-            play -> {
-                focusOnPlay = true
-                focusOnBack = false
-            }
-            back -> {
-                if (focusedEpisodeId == null && focusedSeason == null) {
-                    focusOnBack = true
-                    focusOnPlay = false
-                }
-            }
+            play -> focusOnPlay = true
             else -> {
                 val seasonTag = focused?.getTag(R.id.seasons) as? Int
                 val episodeTag = focused?.getTag(R.id.episodes) as? String
+                val creditTag = focused?.getTag(R.id.creditRows) as? Int
                 if (seasonTag != null) focusedSeason = seasonTag
                 if (episodeTag != null) focusedEpisodeId = episodeTag
+                if (creditTag != null) {
+                    focusedCreditIndex = creditTag
+                    focusOnPlay = false
+                    focusedEpisodeId = null
+                    focusedSeason = null
+                }
             }
         }
     }
@@ -197,6 +290,7 @@ class SeriesActivity : Activity() {
     private fun bindSeasons(numbers: List<Int>, series: LibrarySeries): List<View> {
         seasons.removeAllViews()
         if (seasonScroller.visibility != View.VISIBLE) return emptyList()
+        val density = resources.displayMetrics.density
         return numbers.map { number ->
             val chip = Button(this)
             chip.ensureFocusId()
@@ -204,36 +298,39 @@ class SeriesActivity : Activity() {
             chip.setTag(R.id.seasons, number)
             chip.text = getString(R.string.season_label, persianDigits(number))
             chip.isSelected = number == selectedSeason
-            chip.background = getDrawable(R.drawable.bg_chip)
-            chip.setTextColor(getColor(if (chip.isFocused) R.color.bg else R.color.text))
+            chip.background = getDrawable(R.drawable.bg_season_chip)
+            chip.setTextColor(getColor(if (chip.isFocused || chip.isSelected) R.color.bg else R.color.text))
             chip.isFocusable = true
             chip.isFocusableInTouchMode = true
             chip.isClickable = true
-            chip.textSize = 10f
+            chip.isAllCaps = false
+            chip.textSize = 12f
             chip.minWidth = 0
             chip.minimumWidth = 0
             chip.minHeight = 0
             chip.minimumHeight = 0
-            chip.setPadding(12, 0, 12, 0)
+            chip.setPadding((12 * density).toInt(), 0, (12 * density).toInt(), 0)
             chip.setOnFocusChangeListener { view, focused ->
-                (view as Button).setTextColor(getColor(if (focused) R.color.bg else R.color.text))
+                val button = view as Button
+                button.setTextColor(getColor(if (focused || button.isSelected) R.color.bg else R.color.text))
                 if (focused) {
                     focusedEpisodeId = null
                     focusedSeason = number
                     focusOnPlay = false
-                    focusOnBack = false
                 }
             }
             chip.setOnClickListener {
                 selectedSeason = number
                 focusedSeason = number
                 focusOnPlay = false
-                focusOnBack = false
                 focusedEpisodeId = null
                 bind(series)
             }
-            val params = LinearLayout.LayoutParams((44 * resources.displayMetrics.density).toInt(), (28 * resources.displayMetrics.density).toInt())
-            params.marginEnd = (10 * resources.displayMetrics.density).toInt()
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                (28 * density).toInt(),
+            )
+            params.marginEnd = (8 * density).toInt()
             seasons.addView(chip, params)
             chip
         }
@@ -244,34 +341,51 @@ class SeriesActivity : Activity() {
         return items.map { episode ->
             val card = layoutInflater.inflate(R.layout.item_episode, episodes, false)
             card.ensureFocusId()
+            if (Build.VERSION.SDK_INT >= 26) card.defaultFocusHighlightEnabled = false
             card.tag = episode.sourceEpisodeId
             card.setTag(R.id.episodes, episode.sourceEpisodeId)
             val thumb = card.findViewById<ImageView>(R.id.thumb)
             thumb.adjustViewBounds = false
             thumb.scaleType = ImageView.ScaleType.CENTER_CROP
-            thumb.clipRound(5f)
+            card.findViewById<View>(R.id.thumbFrame).clipRound(8f)
+            val thumbFocus = card.findViewById<View>(R.id.thumbFocus)
+            thumbFocus.isSelected = false
             card.findViewById<TextView>(R.id.title).text = episode.label()
-            card.findViewById<TextView>(R.id.episodeNumber).text = persianDigits((episode.displayNumber ?: (episode.sourceOrder + 1).toString()).padStart(2, '0'))
-            card.findViewById<TextView>(R.id.state).text =
-                if (episode.durationMs > 0L) persianClock(episode.durationMs) else ""
-            card.findViewById<View>(R.id.watchedBadge).visibility = if (episode.isWatched) View.VISIBLE else View.GONE
-            val progress = card.findViewById<View>(R.id.progress)
-            if (episode.durationMs > 0 && episode.lastPositionMs > 0 && !episode.isWatched) {
-                progress.visibility = View.VISIBLE
-                val width = (200f * (episode.lastPositionMs.toFloat() / episode.durationMs)).toInt().coerceIn(2, 201)
-                progress.layoutParams = progress.layoutParams.apply { this.width = (width * resources.displayMetrics.density).toInt() }
+            card.findViewById<TextView>(R.id.episodeNumber).text = ""
+            val remaining = SeriesDetail.overlayRemainingMs(episode)
+            val state = card.findViewById<TextView>(R.id.state)
+            if (remaining != null) {
+                state.visibility = View.VISIBLE
+                state.text = persianClock(remaining)
+            } else {
+                state.visibility = View.GONE
             }
-            card.bindCardFocus()
+            card.findViewById<View>(R.id.watchedBadge).visibility =
+                if (episode.isWatched) View.VISIBLE else View.GONE
+            val progress = card.findViewById<View>(R.id.progress)
+            val track = card.findViewById<View>(R.id.progressTrack)
+            val fill = SeriesDetail.progressFraction(episode)
+            val showBar = fill > 0f
+            track.visibility = View.VISIBLE
+            progress.visibility = View.VISIBLE
+            track.alpha = if (showBar) 1f else 0f
+            progress.alpha = if (showBar) 1f else 0f
+            progress.post {
+                progress.pivotX = if (card.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+                    progress.width.toFloat()
+                } else {
+                    0f
+                }
+                progress.scaleX = fill
+            }
             card.setOnFocusChangeListener { view, focused ->
-                view.animate().scaleX(1f).scaleY(1f)
-                    .setDuration(120).start()
-                view.elevation = if (focused) 18f else 0f
+                if (Build.VERSION.SDK_INT >= 26) view.defaultFocusHighlightEnabled = false
+                thumbFocus.isSelected = focused
                 if (focused) {
                     focusedSeason = null
                     focusedEpisodeId = episode.sourceEpisodeId
                     focusOnPlay = false
-                    focusOnBack = false
-                    view.requestRectangleOnScreen(android.graphics.Rect(), false)
+                    episodeScroller.reveal(view, true)
                 }
             }
             card.setOnClickListener { openPlayer(episode) }
@@ -292,12 +406,14 @@ class SeriesActivity : Activity() {
         val firstEpisode = episodeViews.firstOrNull()
         val downFromPlay = firstSeason ?: firstEpisode
         play.nextFocusDownId = downFromPlay?.id ?: View.NO_ID
-        play.nextFocusUpId = back.id
-        play.nextFocusLeftId = findViewById<View>(R.id.showEpisodes).takeIf { it.isShown }?.id ?: play.id
+        play.nextFocusUpId = View.NO_ID
+        play.nextFocusLeftId = View.NO_ID
         play.nextFocusRightId = View.NO_ID
-        back.nextFocusDownId = play.id
-        findViewById<View>(R.id.settings).nextFocusDownId = play.id
-        findViewById<View>(R.id.showEpisodes).apply { nextFocusRightId = play.id; nextFocusDownId = downFromPlay?.id ?: play.id; nextFocusUpId = back.id }
+        findViewById<View>(R.id.showEpisodes).apply {
+            nextFocusRightId = play.id
+            nextFocusDownId = downFromPlay?.id ?: play.id
+            nextFocusUpId = View.NO_ID
+        }
         seasonViews.forEach { chip ->
             chip.nextFocusUpId = play.id
             chip.nextFocusDownId = firstEpisode?.id ?: View.NO_ID
@@ -306,35 +422,47 @@ class SeriesActivity : Activity() {
             card.nextFocusUpId = firstSeason?.id ?: play.id
         }
         firstEpisode?.nextFocusUpId = firstSeason?.id ?: play.id
+        episodeScroller.pinToStart = focusedEpisodeId == null
+        seasonScroller.pinToStart = focusedSeason == null
         if (focusedEpisodeId == null) scrollRowToStart(episodeScroller)
         if (focusedSeason == null) scrollRowToStart(seasonScroller)
     }
 
-    private fun scrollRowToStart(scroller: HorizontalScrollView) {
+    private fun scrollRowToStart(scroller: RtlShelfScrollView) {
         if (scroller.visibility != View.VISIBLE) return
+        scroller.pinToStart = true
         scroller.post {
+            if (scroller.visibility != View.VISIBLE) return@post
             val content = scroller.getChildAt(0) ?: return@post
             if (content.width == 0 || scroller.width == 0) {
+                scroller.post { scrollRowToStart(scroller) }
                 return@post
             }
-            val start = if (scroller.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
-                (content.width - scroller.width).coerceAtLeast(0)
-            } else 0
-            scroller.scrollTo(start, 0)
+            val start = HomeLayout.rtlStartScrollX(
+                content.width,
+                scroller.width,
+                scroller.paddingLeft,
+                scroller.paddingRight,
+            )
+            if (scroller.scrollX != start) scroller.scrollTo(start, 0)
         }
     }
 
     private fun restoreSeriesFocus(seasonViews: List<View>, episodeViews: List<View>) {
         val seasonTarget = focusedSeason?.let { number -> seasonViews.firstOrNull { it.getTag(R.id.seasons) == number } }
         val episodeTarget = focusedEpisodeId?.let { id -> episodeViews.firstOrNull { it.getTag(R.id.episodes) == id } }
+        val creditTarget = focusedCreditIndex?.let { index ->
+            creditCards().firstOrNull { it.getTag(R.id.creditRows) == index }
+        }
         val target = when {
             !initialFocusApplied -> play
-            seasonTarget != null && !focusOnPlay && !focusOnBack -> seasonTarget
-            episodeTarget != null && !focusOnPlay && !focusOnBack -> episodeTarget
-            focusOnBack && focusedEpisodeId == null && focusedSeason == null -> back
+            seasonTarget != null && !focusOnPlay -> seasonTarget
+            episodeTarget != null && !focusOnPlay -> episodeTarget
+            creditTarget != null && !focusOnPlay -> creditTarget
             focusOnPlay -> play
             episodeTarget != null -> episodeTarget
             seasonTarget != null -> seasonTarget
+            creditTarget != null -> creditTarget
             else -> play
         }
         target.post { target.requestFocus() }

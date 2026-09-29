@@ -22,6 +22,27 @@ object HomeLayout {
         paddingRight: Int = 0,
     ): Int = (rowWidth - (viewportWidth - paddingLeft - paddingRight)).coerceAtLeast(0)
 
+    /**
+     * Scroll position while a shelf has focus. The rightmost RTL card must use
+     * the padded start offset. A minimal "bring into view" scroll parks that
+     * card on the screen edge and leaves the section title inset.
+     */
+    fun rtlFocusScrollX(
+        scrollX: Int,
+        rowWidth: Int,
+        viewportWidth: Int,
+        paddingLeft: Int,
+        paddingRight: Int,
+        pinToStart: Boolean,
+        focusedAtRtlStart: Boolean,
+    ): Int {
+        val start = rtlStartScrollX(rowWidth, viewportWidth, paddingLeft, paddingRight)
+        return when {
+            pinToStart || focusedAtRtlStart -> start
+            else -> scrollX.coerceIn(0, start)
+        }
+    }
+
     fun shelfRowWidth(
         posterCount: Int,
         posterWidth: Int,

@@ -30,7 +30,7 @@
             android:text=""
             android:textSize="9sp"
             android:textColor="@color/text"
-            android:fontFamily="@font/byekan_family"
+            android:fontFamily="@font/vazirmatn_family"
             android:includeFontPadding="false"
             android:layout_gravity="top|start"
             android:layout_margin="6dp"

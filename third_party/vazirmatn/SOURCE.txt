@@ -1,0 +1,14 @@
+Vazirmatn v33.003
+Official release: https://github.com/rastikerdar/vazirmatn/releases/tag/v33.003
+Taken from vazirmatn-v33.003.zip:
+
+  fonts/ttf/Vazirmatn-Regular.ttf
+  fonts/ttf/Vazirmatn-Bold.ttf
+  OFL.txt
+
+SHA-256:
+  Vazirmatn-Regular.ttf  b69fd4c680b8f3f225feabcc655a2c585d97627b8f5f5c0f9985e894069f3a56
+  Vazirmatn-Bold.ttf     f635fdbea28f265de395ba83b4b1570dcf2f58d13c65469e61903b1c2d2ae723
+  OFL.txt                17e355067c8284f47743a1ee3b1ef7ff684ff0601eda357f9353b10b3016ab31
+
+License: SIL Open Font License 1.1 — see OFL.txt in this directory.

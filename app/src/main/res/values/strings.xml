@@ -43,7 +43,10 @@
     <string name="back">بازگشت</string>
     <string name="duration_minutes">%1$s دقیقه</string>
     <string name="play_first">پخش اولین دیده‌نشده</string>
-    <string name="continue_watch">ادامه</string>
+    <string name="continue_watch">ادامه تماشا</string>
+    <string name="continue_watch_episode">ادامه تماشا (%1$s)</string>
+    <string name="credit_heading">عوامل فیلم</string>
+    <string name="play_movie">پخش فیلم</string>
     <string name="play_episode">پخش %1$s</string>
     <string name="episode_label">قسمت %1$s</string>
     <string name="episode_word">قسمت</string>

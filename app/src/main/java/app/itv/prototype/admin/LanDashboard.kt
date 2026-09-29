@@ -94,8 +94,8 @@ class LanDashboard(
         val server = embeddedServer(CIO, port = chosen, host = "0.0.0.0") {
             routing {
                 get("/") { call.respondHtmlPage() }
-                get("/fonts/regular.ttf") { call.respondBytes(this@LanDashboard.context.resources.openRawResource(R.font.byekan).use { it.readBytes() }, ContentType.parse("font/ttf")) }
-                get("/fonts/bold.ttf") { call.respondBytes(this@LanDashboard.context.resources.openRawResource(R.font.byekanbold).use { it.readBytes() }, ContentType.parse("font/ttf")) }
+                get("/fonts/regular.ttf") { call.respondBytes(this@LanDashboard.context.resources.openRawResource(R.font.vazirmatn_regular).use { it.readBytes() }, ContentType.parse("font/ttf")) }
+                get("/fonts/bold.ttf") { call.respondBytes(this@LanDashboard.context.resources.openRawResource(R.font.vazirmatn_bold).use { it.readBytes() }, ContentType.parse("font/ttf")) }
                 get("/api/status") { call.respondJson(statusJson()) }
                 post("/api/pair") { call.handlePair() }
                 post("/api/logout") { call.authed { handleLogout() } }

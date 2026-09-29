@@ -45,7 +45,7 @@
             android:textSize="13sp"
             android:background="@drawable/bg_nav_pill_home"
             android:textColor="#FFFFFF"
-            android:fontFamily="@font/byekan_family"
+            android:fontFamily="@font/vazirmatn_family"
             android:includeFontPadding="false"
             android:focusable="true"
             android:focusableInTouchMode="true" />
@@ -69,7 +69,7 @@
             android:textSize="13sp"
             android:background="@drawable/bg_nav_pill"
             android:textColor="@color/muted"
-            android:fontFamily="@font/byekan_family"
+            android:fontFamily="@font/vazirmatn_family"
             android:includeFontPadding="false"
             android:focusable="true"
             android:focusableInTouchMode="true" />
@@ -93,7 +93,7 @@
             android:textSize="13sp"
             android:background="@drawable/bg_nav_pill"
             android:textColor="@color/muted"
-            android:fontFamily="@font/byekan_family"
+            android:fontFamily="@font/vazirmatn_family"
             android:includeFontPadding="false"
             android:focusable="true"
             android:focusableInTouchMode="true" />
@@ -117,7 +117,7 @@
             android:textSize="13sp"
             android:background="@drawable/bg_nav_pill"
             android:textColor="@color/muted"
-            android:fontFamily="@font/byekan_family"
+            android:fontFamily="@font/vazirmatn_family"
             android:includeFontPadding="false"
             android:focusable="true"
             android:focusableInTouchMode="true" />

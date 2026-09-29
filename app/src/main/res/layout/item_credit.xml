@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="@dimen/credit_card_w"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="@dimen/credit_gap"
+    android:background="@android:color/transparent"
+    android:clickable="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:defaultFocusHighlightEnabled="false"
+    android:descendantFocusability="blocksDescendants"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:foreground="@null"
+    android:gravity="center_horizontal"
+    android:layoutDirection="rtl"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/creditFocus"
+        android:layout_width="@dimen/credit_portrait"
+        android:layout_height="@dimen/credit_portrait"
+        android:background="@drawable/bg_credit_focus"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:padding="@dimen/series_focus_pad">
+
+        <app.itv.prototype.ui.PortraitHaloView
+            android:id="@+id/creditHalo"
+            android:layout_width="@dimen/credit_halo"
+            android:layout_height="@dimen/credit_halo"
+            android:layout_gravity="center"
+            android:duplicateParentState="true" />
+
+        <FrameLayout
+            android:id="@+id/creditPortraitFrame"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <app.itv.prototype.ui.StableImageView
+                android:id="@+id/creditPortrait"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:adjustViewBounds="false"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_credit_fallback" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/creditName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/vazirmatn_family"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="2"
+        android:paddingTop="6dp"
+        android:textAlignment="center"
+        android:textColor="@color/text"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/creditRole"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/vazirmatn_family"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:paddingTop="2dp"
+        android:textAlignment="center"
+        android:textColor="@color/muted"
+        android:textSize="10sp" />
+</LinearLayout>

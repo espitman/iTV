@@ -2,7 +2,7 @@
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="@dimen/home_heading_h"
-    android:fontFamily="@font/byekan_family"
+    android:fontFamily="@font/vazirmatn_family"
     android:includeFontPadding="false"
     android:textColor="#E8EEF2"
     android:textSize="16sp"

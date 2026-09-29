@@ -6,6 +6,7 @@ import app.itv.prototype.core.CatalogPaging
 import app.itv.prototype.core.CatalogPreview
 import app.itv.prototype.core.CatalogRows
 import app.itv.prototype.core.IncomingSeason
+import app.itv.prototype.core.MovieCreditPerson
 import app.itv.prototype.core.PlaybackRules
 import app.itv.prototype.core.ResolvedStream
 import app.itv.prototype.core.SourceKind
@@ -147,6 +148,9 @@ class TelewebionClient(
     }
 
     fun loadMovie(contentId: String) = CatalogMapper.movieEpisode(productContent(contentId))
+
+    fun loadMovieCredits(contentId: String): List<MovieCreditPerson> =
+        CatalogMapper.movieCredits(productContent(contentId))
 
     private fun productCatalogContent(contentId: String): JSONObject {
         val content = productContent(contentId)

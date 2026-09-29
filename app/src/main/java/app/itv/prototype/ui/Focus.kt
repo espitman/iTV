@@ -84,6 +84,21 @@ fun View.clipRound(radiusDp: Float) {
     }
 }
 
+fun View.clipOval() {
+    clipToOutline = true
+    outlineProvider = object : ViewOutlineProvider() {
+        override fun getOutline(view: View, outline: Outline) {
+            val width = view.width.takeIf { it > 0 } ?: view.measuredWidth
+            val height = view.height.takeIf { it > 0 } ?: view.measuredHeight
+            if (width <= 0 || height <= 0) {
+                outline.setEmpty()
+                return
+            }
+            outline.setOval(0, 0, width, height)
+        }
+    }
+}
+
 fun TextView.setFocusedText(focused: Boolean) {
     setTextColor(context.getColor(if (focused) R.color.bg else R.color.text))
 }

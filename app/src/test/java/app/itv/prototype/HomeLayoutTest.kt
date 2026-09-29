@@ -36,6 +36,40 @@ class HomeLayoutTest {
     }
 
     @Test
+    fun returningToTheRtlStartCardRestoresStartPadding() {
+        val row = 4200
+        val viewport = 3840
+        val endPad = 64
+        val startPad = 160
+        val start = HomeLayout.rtlStartScrollX(row, viewport, endPad, startPad)
+        val flushWithEdge = (start - startPad).coerceAtLeast(0)
+        assertEquals(
+            start,
+            HomeLayout.rtlFocusScrollX(
+                scrollX = flushWithEdge,
+                rowWidth = row,
+                viewportWidth = viewport,
+                paddingLeft = endPad,
+                paddingRight = startPad,
+                pinToStart = false,
+                focusedAtRtlStart = true,
+            ),
+        )
+        assertEquals(
+            flushWithEdge,
+            HomeLayout.rtlFocusScrollX(
+                scrollX = flushWithEdge,
+                rowWidth = row,
+                viewportWidth = viewport,
+                paddingLeft = endPad,
+                paddingRight = startPad,
+                pinToStart = false,
+                focusedAtRtlStart = false,
+            ),
+        )
+    }
+
+    @Test
     fun revealDeltaOnlyMovesWhenTheCardIsClipped() {
         assertEquals(0, HomeLayout.revealDelta(childStart = 400, childEnd = 500, viewportStart = 400, viewportEnd = 800))
         assertEquals(-40, HomeLayout.revealDelta(childStart = 360, childEnd = 460, viewportStart = 400, viewportEnd = 800))

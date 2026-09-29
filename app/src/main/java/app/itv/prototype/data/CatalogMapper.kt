@@ -2,10 +2,12 @@ package app.itv.prototype.data
 
 import app.itv.prototype.core.IncomingEpisode
 import app.itv.prototype.core.IncomingSeason
+import app.itv.prototype.core.MovieCreditPerson
 import app.itv.prototype.core.PlaybackRules
 import app.itv.prototype.core.firstNumberToken
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.URLEncoder
 
 enum class TelewebionImageKind(val folder: String) {
     PROGRAM("programImages"),
@@ -30,7 +32,13 @@ object CatalogMapper {
         val value = raw.trim()
         if (value.isEmpty() || value == "null") return null
         if (value.startsWith("http")) return value
-        if (value.startsWith("/sites/default")) return "https://gateway.telewebion.net$value"
+        if (value.startsWith("/sites/default")) {
+            val encoded = value.split("/").joinToString("/") { segment ->
+                if (segment.isEmpty()) segment
+                else URLEncoder.encode(segment, Charsets.UTF_8.name()).replace("+", "%20")
+            }
+            return "https://gateway.telewebion.net$encoded"
+        }
         if (imageToken.matches(value)) return "https://static.telewebion.net/${kind.folder}/$value/default"
         return null
     }
@@ -189,6 +197,33 @@ object CatalogMapper {
             text(media, "main_big_poster", "horizontal_big_poster", "horizontal_small_poster", "main_small_poster"),
             TelewebionImageKind.VOD,
         )
+    }
+
+    private val creditGroups = listOf(
+        "director" to "کارگردان",
+        "writer" to "نویسنده",
+        "actors" to "بازیگران",
+        "producer" to "تهیه‌کننده",
+        "cameraman" to "فیلمبردار",
+        "editor" to "تدوین‌گر",
+        "composer" to "آهنگساز",
+    )
+
+    fun movieCredits(content: JSONObject): List<MovieCreditPerson> {
+        if (!isMovie(content)) return emptyList()
+        val people = mutableListOf<MovieCreditPerson>()
+        creditGroups.forEach { (key, fallback) ->
+            val array = content.optJSONArray(key) ?: return@forEach
+            for (index in 0 until array.length()) {
+                val entry = array.optJSONObject(index) ?: continue
+                val person = entry.optJSONObject("person")
+                val name = text(person, "title")
+                if (name.isBlank()) continue
+                val role = text(entry.optJSONObject("role"), "title").ifBlank { fallback }
+                people += MovieCreditPerson(name, role, imageUrl(text(person, "image"), TelewebionImageKind.VOD))
+            }
+        }
+        return people
     }
 
     fun movieEpisode(content: JSONObject): IncomingEpisode {
