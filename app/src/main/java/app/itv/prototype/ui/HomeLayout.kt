@@ -81,6 +81,18 @@ object HomeLayout {
         else -> 0
     }
 
+    /**
+     * Absolute RTL shelf scroll for one focus step. Returning to the start card
+     * uses [rtlStart] even when [current] is a mid-animation offset, so the
+     * padded right inset is restored. Any other step adds [delta] to the live
+     * offset and clamps to the same range.
+     */
+    fun shelfScrollTarget(current: Int, delta: Int, rtlStart: Int, focusedAtRtlStart: Boolean): Int {
+        val limit = rtlStart.coerceAtLeast(0)
+        if (focusedAtRtlStart) return limit
+        return (current + delta).coerceIn(0, limit)
+    }
+
     fun libraryScrollTop(heroCopy: Int, heading: Int, continueRow: Int, hasContinue: Boolean): Int {
         val pinned = if (hasContinue) heading.coerceAtLeast(0) + continueRow.coerceAtLeast(0) else 0
         return heroCopy.coerceAtLeast(0) + pinned

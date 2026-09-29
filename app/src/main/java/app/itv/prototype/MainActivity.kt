@@ -1,5 +1,6 @@
 package app.itv.prototype
 
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -11,12 +12,14 @@ import android.os.Build
 import android.os.Bundle
 import android.util.AttributeSet
 import android.view.View
+import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import kotlin.math.abs
 import app.itv.prototype.core.HomeCatalog
 import app.itv.prototype.core.ImportState
 import app.itv.prototype.core.LibraryEpisode
@@ -48,7 +51,7 @@ class MainActivity : Activity() {
     private var observeJob: Job? = null
     private lateinit var empty: View
     private lateinit var library: LinearLayout
-    private lateinit var libraryScroll: ScrollView
+    private lateinit var libraryScroll: HomeLibraryScrollView
     private lateinit var continuePinned: LinearLayout
     private lateinit var settings: Button
     private lateinit var navHome: Button
@@ -58,6 +61,8 @@ class MainActivity : Activity() {
     private var focusedSeriesId: Long? = null
     private var focusedMoreKind: Boolean? = null
     private var heroSeries: LibrarySeries? = null
+    private var heroToken = 0
+    private var shownHeroKey: String? = null
     private var initialFocus = false
     private var boundSignature: String? = null
     private lateinit var heroPlay: Button
@@ -91,7 +96,7 @@ class MainActivity : Activity() {
             btn.isClickable = true
             if (Build.VERSION.SDK_INT >= 26) btn.defaultFocusHighlightEnabled = false
             btn.setOnFocusChangeListener { _, focused ->
-                if (focused) libraryScroll.scrollTo(0, 0)
+                if (focused) libraryScroll.animateScrollToY(0)
             }
         }
         heroPlay.setTextColor(getColor(R.color.bg))
@@ -106,7 +111,7 @@ class MainActivity : Activity() {
         }
 
         navHome.setOnClickListener {
-            libraryScroll.scrollTo(0, 0)
+            libraryScroll.animateScrollToY(0)
             heroPlay.requestFocus()
         }
         navSeries.setOnClickListener { openLibrary(false) }
@@ -162,6 +167,8 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.heroTextContainer)?.visibility = if (hasItems) View.VISIBLE else View.GONE
         if (!hasItems) {
             heroSeries = null
+            shownHeroKey = null
+            heroToken++
             boundSignature = null
             continuePinned.removeAllViews()
             continuePinned.visibility = View.GONE
@@ -217,6 +224,7 @@ class MainActivity : Activity() {
                 if (continueRow) R.dimen.home_continue_h else R.dimen.home_poster_h,
             )
             val horizontal = RtlShelfScrollView(this).apply {
+                animateFocusScroll = true
                 setPadding(
                     resources.getDimensionPixelSize(R.dimen.home_shelf_pad_h),
                     resources.getDimensionPixelSize(R.dimen.home_shelf_pad_v),
@@ -248,7 +256,7 @@ class MainActivity : Activity() {
                     clipRound(10f)
                     if (Build.VERSION.SDK_INT >= 26) defaultFocusHighlightEnabled = false
                     setOnFocusChangeListener { view, focused ->
-                        view.applyCinematicFocus(focused)
+                        view.applyCinematicFocus(focused, HOME_CARD_SCALE)
                         if (focused) {
                             focusedMoreKind = movies
                             revealHomeItem(view)
@@ -304,19 +312,18 @@ class MainActivity : Activity() {
         val shelf = generateSequence(view.parent as? View) { it.parent as? View }
             .filterIsInstance<RtlShelfScrollView>()
             .firstOrNull()
-        shelf?.reveal(view, true)
+        shelf?.reveal(view, immediate = false)
         if (shelf == null || isPinnedShelf(shelf)) return
         if (libraryScroll.height <= 0) return
         val heading = sectionHeading(shelf)
         if (heading != null) {
-            libraryScroll.scrollTo(0, HomeLayout.sectionSnapY(heading.top))
+            libraryScroll.animateScrollToY(HomeLayout.sectionSnapY(heading.top))
             return
         }
         val rect = Rect(0, 0, shelf.width, shelf.height)
         libraryScroll.offsetDescendantRectToMyCoords(shelf, rect)
         val delta = HomeLayout.revealDelta(rect.top, rect.bottom, 0, libraryScroll.height)
-        if (delta == 0) return
-        libraryScroll.scrollTo(0, (libraryScroll.scrollY + delta).coerceAtLeast(0))
+        libraryScroll.animateScrollToY(libraryScroll.scrollY + delta)
     }
 
     private fun isPinnedShelf(shelf: View): Boolean =
@@ -385,7 +392,7 @@ class MainActivity : Activity() {
         }
 
         card.setOnFocusChangeListener { view, focused ->
-            view.applyCinematicFocus(focused)
+            view.applyCinematicFocus(focused, HOME_CARD_SCALE)
             if (focused) {
                 bindHero(series)
                 focusedSeriesId = view.tag as? Long
@@ -504,10 +511,60 @@ class MainActivity : Activity() {
     private fun bindHero(series: LibrarySeries) {
         heroSeries = series
         val backdrop = findViewById<ImageView>(R.id.backdrop)
-        val url = artwork(series)
-        Pictures.load(url, backdrop) { bitmap ->
-            applyHeroPlacement(backdrop, bitmap.width, bitmap.height)
+        val copy = findViewById<View>(R.id.heroTextContainer)
+        val key = "${series.id}:${artwork(series).orEmpty()}"
+        if (key == shownHeroKey) {
+            heroToken++
+            backdrop.animate().cancel()
+            copy.animate().cancel()
+            applyHeroCopy(series)
+            backdrop.animate().alpha(1f).setDuration(HERO_FADE_IN_MS).start()
+            copy.animate().alpha(1f).setDuration(HERO_FADE_IN_MS).start()
+            return
         }
+        val token = ++heroToken
+        val url = artwork(series)
+        var bitmapReady: Bitmap? = null
+        var imageSettled = false
+        var hidden = shownHeroKey == null
+        fun show() {
+            if (token != heroToken || !hidden || !imageSettled) return
+            val bitmap = bitmapReady
+            if (bitmap != null) {
+                backdrop.setImageBitmap(bitmap)
+                applyHeroPlacement(backdrop, bitmap.width, bitmap.height)
+            } else {
+                backdrop.setImageDrawable(null)
+            }
+            applyHeroCopy(series)
+            shownHeroKey = key
+            backdrop.animate().alpha(1f).setDuration(HERO_FADE_IN_MS).start()
+            copy.animate().alpha(1f).setDuration(HERO_FADE_IN_MS).start()
+        }
+        fun settle(bitmap: Bitmap?) {
+            if (token != heroToken || imageSettled) return
+            bitmapReady = bitmap
+            imageSettled = true
+            show()
+        }
+        if (hidden) {
+            backdrop.alpha = 0f
+            copy.alpha = 0f
+        }
+        Pictures.load(url, backdrop, deferImage = true, onUnavailable = { settle(null) }) { bitmap ->
+            settle(bitmap)
+        }
+        if (hidden) return
+        val fadeOut = if (backdrop.alpha < 0.05f) 0L else HERO_FADE_OUT_MS
+        backdrop.animate().alpha(0f).setDuration(fadeOut).withEndAction {
+            if (token != heroToken) return@withEndAction
+            hidden = true
+            show()
+        }.start()
+        copy.animate().alpha(0f).setDuration(fadeOut).start()
+    }
+
+    private fun applyHeroCopy(series: LibrarySeries) {
         findViewById<TextView>(R.id.heroTitle).text = series.title
         findViewById<TextView>(R.id.heroKindChip).text =
             getString(if (series.isMovie) R.string.hero_kind_movie else R.string.hero_kind_series)
@@ -557,6 +614,12 @@ class MainActivity : Activity() {
     private fun openSettings() {
         startActivity(Intent(this, SettingsActivity::class.java))
     }
+
+    private companion object {
+        const val HOME_CARD_SCALE = 1.04f
+        const val HERO_FADE_OUT_MS = 120L
+        const val HERO_FADE_IN_MS = 190L
+    }
 }
 
 /**
@@ -572,6 +635,30 @@ class HomeLibraryScrollView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
 ) : ScrollView(context, attrs) {
+    private val scrollAnimator = ValueAnimator.ofInt(0, 0).apply {
+        interpolator = DecelerateInterpolator(1.6f)
+    }
+    private var scrollGeneration = 0
+    private var scrollTarget = Int.MIN_VALUE
+
+    fun animateScrollToY(targetY: Int) {
+        val target = targetY.coerceAtLeast(0)
+        if (scrollGeneration != 0 && scrollTarget == target && scrollAnimator.isRunning) return
+        scrollAnimator.removeAllUpdateListeners()
+        scrollAnimator.cancel()
+        scrollTarget = target
+        if (scrollY == target) return
+        val generation = ++scrollGeneration
+        val from = scrollY
+        scrollAnimator.setIntValues(from, target)
+        scrollAnimator.duration = (170L + abs(target - from) / 8L).coerceIn(170L, 260L)
+        scrollAnimator.addUpdateListener { animator ->
+            if (generation != scrollGeneration) return@addUpdateListener
+            scrollTo(0, animator.animatedValue as Int)
+        }
+        scrollAnimator.start()
+    }
+
     override fun computeScrollDeltaToGetChildRectOnScreen(rect: Rect): Int = 0
 
     override fun dispatchDraw(canvas: Canvas) {

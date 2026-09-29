@@ -5,9 +5,12 @@ import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
+import android.view.animation.DecelerateInterpolator
 import android.widget.HorizontalScrollView
 import android.widget.TextView
 import app.itv.prototype.R
+
+private val cardFocusInterpolator = DecelerateInterpolator()
 
 fun View.bindFocusTint() {
     isFocusable = true
@@ -34,11 +37,18 @@ fun View.bindCardFocus() {
 
 fun View.applyCinematicFocus(focused: Boolean, scale: Float = 1.06f) {
     if (Build.VERSION.SDK_INT >= 26) defaultFocusHighlightEnabled = false
-    pivotX = width / 2f
-    pivotY = height / 2f
-    animate().scaleX(if (focused) scale else 1f).scaleY(if (focused) scale else 1f)
-        .setDuration(140).start()
-    elevation = if (focused) 18f else 0f
+    if (width > 0 && height > 0) {
+        pivotX = width / 2f
+        pivotY = height / 2f
+    }
+    elevation = 0f
+    animate()
+        .scaleX(if (focused) scale else 1f)
+        .scaleY(if (focused) scale else 1f)
+        .translationZ(if (focused) 8f else 0f)
+        .setDuration(180)
+        .setInterpolator(cardFocusInterpolator)
+        .start()
     if (Build.VERSION.SDK_INT >= 28) {
         outlineSpotShadowColor = context.getColor(R.color.cyan)
         outlineAmbientShadowColor = context.getColor(R.color.focus_glow)

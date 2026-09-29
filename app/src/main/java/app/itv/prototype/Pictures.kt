@@ -38,12 +38,23 @@ object Pictures {
         return sizes.get(resolved)
     }
 
-    fun load(url: String?, target: ImageView, placeholder: Int? = null, onReady: ((Bitmap) -> Unit)? = null) {
+    fun load(
+        url: String?,
+        target: ImageView,
+        placeholder: Int? = null,
+        deferImage: Boolean = false,
+        onUnavailable: (() -> Unit)? = null,
+        onReady: ((Bitmap) -> Unit)? = null,
+    ) {
         val resolved = episodeUrl(url)
         target.adjustViewBounds = false
         if (resolved == null) {
             target.tag = null
-            placeholder?.let { target.setImageResource(it) } ?: target.setImageDrawable(null)
+            if (deferImage) {
+                onUnavailable?.invoke()
+            } else {
+                placeholder?.let { target.setImageResource(it) } ?: target.setImageDrawable(null)
+            }
             return
         }
         fun apply(bitmap: Bitmap) {
@@ -51,20 +62,28 @@ object Pictures {
             if (target.tag != resolved) return
             if (target.visibility == View.GONE) return
             target.adjustViewBounds = false
-            target.setImageBitmap(bitmap)
+            if (!deferImage) target.setImageBitmap(bitmap)
             onReady?.invoke(bitmap)
         }
-        if (target.tag == resolved && target.drawable != null && onReady == null) return
+        fun unavailable() {
+            if (target.tag != resolved) return
+            onUnavailable?.invoke()
+        }
+        if (!deferImage && target.tag == resolved && target.drawable != null && onReady == null) return
         target.tag = resolved
         cache.get(resolved)?.let {
             apply(it)
             return
         }
-        if (target.drawable == null) {
+        if (!deferImage && target.drawable == null) {
             placeholder?.let { target.setImageResource(it) }
         }
         worker.execute {
-            val bitmap = runCatching { read(resolved) }.getOrNull() ?: return@execute
+            val bitmap = runCatching { read(resolved) }.getOrNull()
+            if (bitmap == null) {
+                main.post { unavailable() }
+                return@execute
+            }
             cache.put(resolved, bitmap)
             remember(resolved, bitmap)
             main.post { apply(bitmap) }

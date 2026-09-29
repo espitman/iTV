@@ -70,6 +70,27 @@ class HomeLayoutTest {
     }
 
     @Test
+    fun shelfScrollTargetRetargetsFromTheLiveRtlOffset() {
+        val rtlStart = 420
+        assertEquals(
+            rtlStart,
+            HomeLayout.shelfScrollTarget(current = 180, delta = -40, rtlStart = rtlStart, focusedAtRtlStart = true),
+        )
+        assertEquals(
+            140,
+            HomeLayout.shelfScrollTarget(current = 180, delta = -40, rtlStart = rtlStart, focusedAtRtlStart = false),
+        )
+        assertEquals(
+            0,
+            HomeLayout.shelfScrollTarget(current = 30, delta = -80, rtlStart = rtlStart, focusedAtRtlStart = false),
+        )
+        assertEquals(
+            rtlStart,
+            HomeLayout.shelfScrollTarget(current = 400, delta = 80, rtlStart = rtlStart, focusedAtRtlStart = false),
+        )
+    }
+
+    @Test
     fun revealDeltaOnlyMovesWhenTheCardIsClipped() {
         assertEquals(0, HomeLayout.revealDelta(childStart = 400, childEnd = 500, viewportStart = 400, viewportEnd = 800))
         assertEquals(-40, HomeLayout.revealDelta(childStart = 360, childEnd = 460, viewportStart = 400, viewportEnd = 800))
