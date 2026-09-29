@@ -59,10 +59,16 @@ class SearchActivity : Activity() {
             setBackgroundResource(R.drawable.bg_nav_pill_home)
             setTextColor(getColor(R.color.text))
         }
-        findViewById<Button>(R.id.navLibrary).setOnClickListener {
+        findViewById<Button>(R.id.navSeries).setOnClickListener {
             startActivity(
                 Intent(this@SearchActivity, LibraryGridActivity::class.java)
                     .putExtra(LibraryGridActivity.EXTRA_MOVIES, false),
+            )
+        }
+        findViewById<Button>(R.id.navMovies).setOnClickListener {
+            startActivity(
+                Intent(this@SearchActivity, LibraryGridActivity::class.java)
+                    .putExtra(LibraryGridActivity.EXTRA_MOVIES, true),
             )
         }
         findViewById<Button>(R.id.settings).setOnClickListener {
@@ -71,12 +77,18 @@ class SearchActivity : Activity() {
 
         val headerNav = listOf(
             findViewById<Button>(R.id.navHome),
-            findViewById<Button>(R.id.navLibrary),
+            findViewById<Button>(R.id.navSeries),
+            findViewById<Button>(R.id.navMovies),
             findViewById<Button>(R.id.settings),
             findViewById<Button>(R.id.navSearch),
         )
         wireRtlRow(headerNav)
-        headerNav.forEach { it.nextFocusDownId = query.id }
+        headerNav.forEach {
+            if (Build.VERSION.SDK_INT >= 26) it.defaultFocusHighlightEnabled = false
+            it.nextFocusDownId = query.id
+        }
+        headerNav.first().nextFocusRightId = headerNav.first().id
+        headerNav.last().nextFocusLeftId = headerNav.last().id
         query.nextFocusUpId = R.id.navSearch
         query.nextFocusDownId = grid.id
 

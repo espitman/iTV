@@ -29,6 +29,8 @@
     <string name="hero_continue">ادامه تماشا</string>
     <string name="hero_watch">تماشا</string>
     <string name="nav_library">کتابخانه</string>
+    <string name="nav_series">سریال‌ها</string>
+    <string name="nav_movies">فیلم‌ها</string>
     <string name="nav_search">جستجو</string>
     <string name="search_hint">جستجو در کتابخانه</string>
     <string name="search_empty">نتیجه‌ای در کتابخانه پیدا نشد</string>
@@ -67,6 +69,16 @@
     <string name="server_stops">سرور با بستن اپ یا رفتن به پس‌زمینه قطع می‌شود.</string>
     <string name="port_label">پورت این نشست: %1$s</string>
     <string name="qr_label">کد QR همان نشانی</string>
+    <string name="copy_url">کپی نشانی</string>
+    <string name="copied_url">نشانی کپی شد</string>
+    <string name="settings_connection_title">تنظیمات اتصال به پنل محلی</string>
+    <string name="settings_client_version">Android TV: %1$s</string>
+    <string name="server_status_on">وضعیت سرور: متصل</string>
+    <string name="server_status_off">وضعیت سرور: قطع</string>
+    <string name="settings_url_label">نشانی پنل محلی (Server URL)</string>
+    <string name="settings_pin_label">کد اتصال (PIN)</string>
+    <string name="settings_qr_caption">اسکن QR جهت اتصال سریع\nاز طریق مرورگر همین شبکه</string>
+    <string name="settings_steps">۱. گوشی یا رایانه را به همین شبکه وصل کنید.\n۲. نشانی را در مرورگر باز کنید، یا کد روبه‌رو را اسکن کنید.\n۳. کد اتصال را در صفحهٔ پنل وارد کنید.</string>
     <string name="resume_title">ادامهٔ %1$s؟</string>
     <string name="resume_body">آخرین بار تا %1$s تماشا کردید.</string>
     <string name="resume_action">ادامهٔ پخش</string>

@@ -52,4 +52,9 @@
     <dimen name="credit_halo">120dp</dimen>
     <dimen name="credit_gap">4dp</dimen>
     <dimen name="credit_row_bottom">28dp</dimen>
+    <dimen name="settings_pad">48dp</dimen>
+    <dimen name="settings_panel_w">600dp</dimen>
+    <dimen name="settings_qr">104dp</dimen>
+    <dimen name="settings_action_h">40dp</dimen>
+    <dimen name="settings_pin_h">46dp</dimen>
 </resources>

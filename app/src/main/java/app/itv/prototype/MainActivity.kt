@@ -52,7 +52,8 @@ class MainActivity : Activity() {
     private lateinit var continuePinned: LinearLayout
     private lateinit var settings: Button
     private lateinit var navHome: Button
-    private lateinit var navLibrary: Button
+    private lateinit var navSeries: Button
+    private lateinit var navMovies: Button
     private lateinit var navSearch: Button
     private var focusedSeriesId: Long? = null
     private var focusedMoreKind: Boolean? = null
@@ -79,7 +80,8 @@ class MainActivity : Activity() {
         heroPlay = findViewById(R.id.heroPlay)
         heroDetails = findViewById(R.id.heroDetails)
         navHome = findViewById(R.id.navHome)
-        navLibrary = findViewById(R.id.navLibrary)
+        navSeries = findViewById(R.id.navSeries)
+        navMovies = findViewById(R.id.navMovies)
         navSearch = findViewById(R.id.navSearch)
         findViewById<View>(R.id.emptySettings)?.setOnClickListener { openSettings() }
 
@@ -107,11 +109,12 @@ class MainActivity : Activity() {
             libraryScroll.scrollTo(0, 0)
             heroPlay.requestFocus()
         }
-        navLibrary.setOnClickListener { openLibrary(false) }
+        navSeries.setOnClickListener { openLibrary(false) }
+        navMovies.setOnClickListener { openLibrary(true) }
         navSearch.setOnClickListener { openSearch() }
         settings.setOnClickListener { openSettings() }
 
-        val headerNav = listOf(navHome, navLibrary, settings, navSearch)
+        val headerNav = listOf(navHome, navSeries, navMovies, settings, navSearch)
         headerNav.forEach { button ->
             if (Build.VERSION.SDK_INT >= 26) button.defaultFocusHighlightEnabled = false
             button.setOnFocusChangeListener { view, focused ->
@@ -150,7 +153,7 @@ class MainActivity : Activity() {
 
     private fun bind(items: List<LibrarySeries>) {
         val previousFocusId = currentFocus?.id
-        val stayOnHeader = currentFocus in setOf(settings, navHome, navLibrary, navSearch)
+        val stayOnHeader = currentFocus in setOf(settings, navHome, navSeries, navMovies, navSearch)
         (currentFocus?.tag as? Long)?.let { focusedSeriesId = it }
         val hasItems = items.isNotEmpty()
         empty.visibility = if (hasItems) View.GONE else View.VISIBLE
