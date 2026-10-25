@@ -858,6 +858,8 @@ function spatial(key) {
     y = r.y + r.height / 2;
   const horizontal = key === "ArrowLeft" || key === "ArrowRight",
     sign = key === "ArrowLeft" || key === "ArrowUp" ? -1 : 1;
+  const rowSelector = ".shelf,.chips,nav,.actions,.grid",
+    row = horizontal ? current.closest(rowSelector) : null;
   let best = null,
     score = Infinity;
   for (const c of candidates) {
@@ -867,6 +869,9 @@ function spatial(key) {
       dy = a.y + a.height / 2 - y,
       along = (horizontal ? dx : dy) * sign,
       cross = Math.abs(horizontal ? dy : dx);
+    // Horizontal movement stays in this visual row, including at its ends.
+    if (horizontal && ((row && c.closest(rowSelector) !== row) ||
+        Math.abs(dy) > Math.min(r.height, a.height) / 2)) continue;
     if (along < 4) continue;
     const cost = along + cross * 4;
     if (cost < score) {
