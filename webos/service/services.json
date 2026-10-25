@@ -1,0 +1,10 @@
+{
+  "id": "app.itv.webos.service",
+  "description": "iTV library and local dashboard",
+  "services": [
+    {
+      "name": "app.itv.webos.service",
+      "description": "iTV library and local dashboard"
+    }
+  ]
+}

@@ -23,7 +23,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import app.itv.prototype.ItvApplication
-import app.itv.prototype.Pictures
 import app.itv.prototype.R
 import app.itv.prototype.core.HomeCatalog
 import app.itv.prototype.core.ImportState
@@ -34,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 class SearchActivity : Activity() {
@@ -51,7 +51,10 @@ class SearchActivity : Activity() {
     private lateinit var filterMovies: Button
     private lateinit var empty: TextView
     private lateinit var results: LinearLayout
+    private lateinit var skeleton: View
     private var catalog: List<LibrarySeries> = emptyList()
+    private var catalogLoaded = false
+    private var skeletonBuilt = false
     private var filter = Filter.ALL
     private var blockAutoKeyboard = false
     private var imeInsetVisible = false
@@ -74,6 +77,7 @@ class SearchActivity : Activity() {
         filterMovies = findViewById(R.id.filterMovies)
         empty = findViewById(R.id.searchEmpty)
         results = findViewById(R.id.results)
+        skeleton = findViewById(R.id.searchSkeleton)
         query.showSoftInputOnFocus = true
         resultsChrome.visibility = View.GONE
         empty.visibility = View.GONE
@@ -183,14 +187,20 @@ class SearchActivity : Activity() {
         blockAutoKeyboard = false
         observeJob?.cancel()
         observeJob = scope.launch {
-            ItvApplication.instance.repository.observeLibrary().collect { items ->
-                catalog = items
-                render()
-                if (!landed) {
-                    landed = true
-                    if (hasWindowFocus() && query.text.isNullOrBlank()) openKeyboard(fromUser = false)
+            ItvApplication.instance.repository.observeLibrary()
+                .catch {
+                    catalogLoaded = true
+                    render()
                 }
-            }
+                .collect { items ->
+                    catalog = items
+                    catalogLoaded = true
+                    render()
+                    if (!landed) {
+                        landed = true
+                        if (hasWindowFocus() && query.text.isNullOrBlank()) openKeyboard(fromUser = false)
+                    }
+                }
         }
     }
 
@@ -241,6 +251,7 @@ class SearchActivity : Activity() {
         if (needle.isEmpty()) {
             resultsChrome.visibility = View.GONE
             empty.visibility = View.GONE
+            hideSearchSkeleton()
             val focusedCard = currentFocus?.tag is Long
             results.removeAllViews()
             cards = emptyList()
@@ -248,6 +259,16 @@ class SearchActivity : Activity() {
             if (focusedCard) query.requestFocus()
             return
         }
+        if (!catalogLoaded) {
+            resultsChrome.visibility = View.GONE
+            empty.visibility = View.GONE
+            results.removeAllViews()
+            cards = emptyList()
+            showSearchSkeleton()
+            wireControls()
+            return
+        }
+        hideSearchSkeleton()
         val matches = HomeCatalog.search(catalog, needle)
         val visible = matches.filter { item ->
             when (filter) {
@@ -281,6 +302,53 @@ class SearchActivity : Activity() {
         if (focusedId != null) {
             cards.flatten().firstOrNull { it.tag == focusedId }?.requestFocus()
         }
+    }
+
+    /** Placeholder result grid shown while the library catalog is still loading. */
+    private fun showSearchSkeleton() {
+        skeleton.visibility = View.VISIBLE
+        if (skeletonBuilt) return
+        if (results.width <= 0) {
+            results.post { if (skeleton.visibility == View.VISIBLE) buildSearchSkeleton() }
+            return
+        }
+        buildSearchSkeleton()
+    }
+
+    private fun hideSearchSkeleton() {
+        skeleton.visibility = View.GONE
+    }
+
+    private fun buildSearchSkeleton() {
+        val width = results.width
+        if (width <= 0) return
+        val host = skeleton as LinearLayout
+        host.removeAllViews()
+        val gap = (12 * resources.displayMetrics.density).toInt()
+        val column = (width - gap * (COLUMNS - 1)) / COLUMNS
+        val focusPad = resources.getDimensionPixelSize(R.dimen.catalog_focus_pad)
+        val posterHeight = LibraryGridLayout.posterFrameHeight(column, focusPad)
+        repeat(SKELETON_ROWS) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutDirection = View.LAYOUT_DIRECTION_RTL
+                clipChildren = false
+            }
+            repeat(COLUMNS) { index ->
+                val cell = SkeletonViews.catalogCell(this, column, posterHeight)
+                val params = LinearLayout.LayoutParams(column, LinearLayout.LayoutParams.WRAP_CONTENT)
+                if (index > 0) params.marginStart = gap
+                row.addView(cell, params)
+            }
+            host.addView(
+                row,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = gap },
+            )
+        }
+        skeletonBuilt = true
     }
 
     private fun buildRows(items: List<LibrarySeries>): List<List<View>> {
@@ -326,7 +394,7 @@ class SearchActivity : Activity() {
         card.findViewById<View>(R.id.posterFrame).layoutParams =
             card.findViewById<View>(R.id.posterFrame).layoutParams.apply { height = posterHeight }
         card.findViewById<View>(R.id.cardInner).clipRound(10f)
-        Pictures.load(
+        CoverSkeleton.load(
             LibraryGridLayout.coverUrl(series.posterUrl, series.backdropUrl),
             card.findViewById(R.id.poster),
             R.drawable.bg_poster,
@@ -492,5 +560,6 @@ class SearchActivity : Activity() {
     companion object {
         private const val REQUEST_VOICE = 41
         private const val COLUMNS = 6
+        private const val SKELETON_ROWS = 2
     }
 }

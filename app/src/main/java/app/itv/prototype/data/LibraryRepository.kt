@@ -1,5 +1,7 @@
 package app.itv.prototype.data
 
+import androidx.room.withTransaction
+import app.itv.prototype.core.AllowedSource
 import app.itv.prototype.core.EpisodeProgress
 import app.itv.prototype.core.ImportState
 import app.itv.prototype.core.IncomingEpisode
@@ -101,8 +103,8 @@ class LibraryRepository(private val db: ItvDatabase) {
         isMovie: Boolean = false,
         durationMinutes: Int = 0,
         backdropUrl: String? = null,
-    ) {
-        val series = db.series().byId(id) ?: return
+    ) = db.withTransaction {
+        val series = db.series().byId(id) ?: return@withTransaction
         db.series().update(
             series.copy(
                 sourceTitle = title?.ifBlank { series.sourceTitle } ?: series.sourceTitle,
@@ -115,6 +117,36 @@ class LibraryRepository(private val db: ItvDatabase) {
             ),
         )
     }
+
+    suspend fun edit(id: Long, source: AllowedSource, localTitle: String?, customPosterUrl: String?,
+                     sourceTitle: String? = null, posterUrl: String? = null, description: String? = null,
+                     durationMinutes: Int? = null, backdropUrl: String? = null,
+                     customBackdropUrl: String? = null): Boolean = db.withTransaction {
+        val row = db.series().byId(id) ?: error("عنوان پیدا نشد")
+        val duplicate = db.series().bySource(source.kind.name, source.sourceId)
+        require(duplicate == null || duplicate.id == id) { "این لینک قبلاً در کتابخانه وجود دارد" }
+        val changed = row.sourceKind != source.kind.name || row.sourceId != source.sourceId
+        db.series().update(row.copy(
+            sourceKind = source.kind.name, sourceId = source.sourceId,
+            localTitle = localTitle?.trim()?.ifBlank { null }, customPosterUrl = customPosterUrl,
+            customBackdropUrl = customBackdropUrl,
+            sourceTitle = sourceTitle ?: row.sourceTitle,
+            posterUrl = if (changed) posterUrl else row.posterUrl,
+            description = if (changed) description else row.description,
+            durationMinutes = durationMinutes ?: row.durationMinutes,
+            backdropUrl = if (changed) backdropUrl else row.backdropUrl,
+            importState = if (changed) ImportState.QUEUED.name else row.importState,
+            importError = if (changed) null else row.importError,
+        ))
+        if (changed) finishRefresh(id, emptyList())
+        changed
+    }
+
+    suspend fun customBackdropUrl(id: Long): String? = db.series().byId(id)?.customBackdropUrl
+    suspend fun automaticBackdropUrl(id: Long): String? = db.series().byId(id)?.backdropUrl
+
+    suspend fun customPosterUrl(id: Long): String? = db.series().byId(id)?.customPosterUrl
+    suspend fun automaticPosterUrl(id: Long): String? = db.series().byId(id)?.posterUrl
 
     suspend fun rename(id: Long, localTitle: String?) {
         val series = db.series().byId(id) ?: return
@@ -250,7 +282,7 @@ class LibraryRepository(private val db: ItvDatabase) {
             title = series.localTitle?.ifBlank { null } ?: series.sourceTitle,
             sourceTitle = series.sourceTitle,
             localTitle = series.localTitle,
-            posterUrl = series.posterUrl,
+            posterUrl = series.customPosterUrl ?: series.posterUrl,
             description = series.description,
             addedAt = series.addedAt,
             refreshedAt = series.refreshedAt,
@@ -258,7 +290,8 @@ class LibraryRepository(private val db: ItvDatabase) {
             importError = series.importError,
             isMovie = series.isMovie,
             durationMinutes = series.durationMinutes,
-            backdropUrl = series.backdropUrl,
+            backdropUrl = series.customBackdropUrl ?: series.backdropUrl,
+            customBackdropUrl = series.customBackdropUrl,
             seasons = seasons.sortedBy { it.sourceOrder }.map {
                 LibrarySeason(it.id, it.seriesId, it.seasonNumber, it.sourceOrder, it.title)
             },

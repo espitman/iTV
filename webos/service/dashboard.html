@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iTV — پنل مدیریت</title>
+  <style>
+    @font-face{font-family:Vazirmatn;src:url('/fonts/regular.ttf') format('truetype');font-weight:400;font-display:swap}
+    @font-face{font-family:Vazirmatn;src:url('/fonts/bold.ttf') format('truetype');font-weight:700;font-display:swap}
+    :root{--bg:#080f13;--surface:#10191e;--card:#14242a;--cyan:#20dce6;--text:#f3fbfc;--muted:#91a2aa;--error:#ffaaa2}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 Vazirmatn,Tahoma,sans-serif;min-height:100vh}button,input{font:inherit}button,a,input{-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+    .layout{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}.layout.unpaired{grid-template-columns:minmax(0,1fr)}aside{padding:32px 20px 20px;background:#0d1519;display:flex;flex-direction:column;gap:12px;border-inline-end:1px solid #26343b;position:sticky;top:0;height:100vh}.brand{font:700 25px/1.2 Vazirmatn,sans-serif;direction:ltr;text-align:left;margin-bottom:8px;display:flex;align-items:center;gap:5px}.brand b{display:inline-grid;place-items:center;background:var(--cyan);color:#071218;width:32px;height:32px;border-radius:9px}.brand+div{color:var(--muted);font-size:11px;margin-bottom:22px}.side-link{color:var(--muted);text-decoration:none;padding:12px 16px;border:1px solid transparent;border-radius:9px;font-weight:bold}.side-link.on,.side-link:hover{background:#122a2e;border-color:#15464b;color:var(--text)}.side-link span{color:var(--cyan);margin-left:12px}.connection{margin-top:auto;border:1px solid #293c43;border-radius:12px;padding:14px;font-size:12px}.connection b{display:block}.connection small{font-size:10px}.dot{color:#5dddac;margin-left:6px}.aside-foot{font-size:10px;color:var(--muted)}
+    main{min-width:0;padding:0 34px 24px}.topbar{height:64px;border-bottom:1px solid #26343b;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);margin:0 -34px 24px;padding:0 34px}.page-heading{display:flex;align-items:center;justify-content:space-between;margin:24px 0 14px}.page-heading p{font-size:12px;margin:4px 0}.eyebrow{color:var(--muted);font-size:11px;margin-bottom:4px}.eyebrow:before{content:'•';color:var(--cyan);margin-left:8px}h1{margin:0;font-size:28px;line-height:1.4}h2{font-size:20px;margin:0 0 10px}h1,h2,p{overflow-wrap:anywhere}p{margin:8px 0 16px}p,small{color:var(--muted)}small{font-size:12px}.count{padding:12px 18px;border:1px solid #283a42;border-radius:10px;white-space:nowrap;font-size:11px;color:var(--muted)}.count b{font-size:25px;color:var(--cyan);margin-left:8px}.panel{min-width:0;background:var(--surface);border:1px solid #2a3d46;border-radius:14px;padding:20px;margin:14px 0}.panel p{font-size:13px}#add{background:linear-gradient(110deg,#132027,#10191e)}
+    label{display:block;margin-bottom:8px;color:var(--muted)}input{display:block;min-width:0;width:100%;background:#0a1216;border:1px solid #344c57;color:var(--text);border-radius:8px;padding:10px 13px;font-size:14px;min-height:44px}.row{display:flex;gap:10px;align-items:center}.row input{flex:1}.row button{flex-shrink:0}button{min-height:36px;background:#172329;color:var(--text);border:1px solid #344a55;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer;white-space:normal}button.primary{background:var(--cyan);color:#06202a;border-color:var(--cyan)}button.danger{border-color:#614346;color:var(--error)}button:disabled{opacity:.5;cursor:wait}.row button{min-height:44px}.hint{font-size:11px!important;margin:10px 0 0}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{text-align:right;padding:12px 8px;border-bottom:1px solid #24363f;overflow-wrap:anywhere;vertical-align:middle}th{color:var(--muted);font-weight:400;font-size:11px;background:#162128}th:first-child{width:30%}th:last-child{width:18%}th:nth-child(3){width:20%}.actions{display:flex;gap:7px}.actions button{display:grid;place-items:center;min-height:32px;width:32px;padding:6px;flex-shrink:0}.actions svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7}.source{font:11px/1.8 sans-serif;direction:ltr;text-align:right}.library-title{display:flex;gap:10px;align-items:center}.library-title img{width:38px;height:50px;object-fit:cover;border-radius:4px}.library-title strong{font-size:16px}.library-title small{font-size:10px}.table-footer{font-size:10px;color:var(--muted);padding-top:12px;display:flex;justify-content:space-between}.error{color:var(--error)}.ok{color:#8cddbf}.hidden{display:none!important}.preview{display:flex;gap:22px;align-items:center;margin-top:18px;padding-top:18px;border-top:1px solid #29424f}.preview>div{min-width:0;overflow-wrap:anywhere}.preview img{flex:none;width:200px;height:130px;object-fit:cover;border-radius:9px;background:#091722}.preview strong{display:block;font-size:24px;margin:5px 0}.preview .preview-meta{font-size:12px;color:var(--muted);margin-top:10px}.pin-box{display:flex}.pin-box input{width:180px;max-width:100%;text-align:center;direction:ltr;font-size:28px;letter-spacing:8px}#pair-card{max-width:480px;margin:80px auto}#pair-btn{width:180px;max-width:100%}#pair-msg,#add-msg{overflow-wrap:anywhere}#pair-msg:empty,#add-msg:empty{display:none}.empty-cell{color:var(--muted)}
+    @media(max-width:1100px){.layout{grid-template-columns:195px minmax(0,1fr)}main{padding:0 22px 24px}.topbar{margin-inline:-22px;padding-inline:22px}.row{flex-wrap:wrap}.row input{flex-basis:100%}.count{padding:10px}th:last-child{width:24%}.preview img{width:130px;height:100px}}
+    @media(max-width:800px){body{font-size:15px}.layout{display:block}aside{position:static;height:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;padding:16px;border-inline-end:0;border-bottom:1px solid #29414b}.brand{margin:0}.brand+div{margin:0;text-align:left;align-self:center;font-size:11px}.side-link{text-align:center;padding:10px 6px;font-size:13px}.connection,.aside-foot{display:none}main{padding:0 16px 24px}.topbar{height:44px;margin:0 -16px 20px;padding:0 16px;font-size:10px}.page-heading{gap:10px;align-items:flex-start}h1{font-size:25px}h2{font-size:19px}.count{font-size:9px;padding:6px 8px}.count b{display:block;font-size:20px}.panel{padding:16px;margin:14px 0;border-radius:12px}.row{display:grid;grid-template-columns:1fr 1fr}.row input{grid-column:1/-1}.row button{padding:8px 5px;font-size:13px}.preview{gap:12px;align-items:flex-start}.preview img{width:82px;height:108px}.preview strong{font-size:20px}.preview .preview-meta{font-size:11px}table,tbody{display:block;width:100%}thead{display:none}tr{display:grid;grid-template-columns:minmax(0,1fr);border:1px solid #293b43;background:#101c22;border-radius:10px;padding:12px;margin-top:12px}td{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;border:0;padding:6px 0;min-width:0;font-size:13px}td:before{content:attr(data-label);color:var(--muted);font:12px/1.8 Vazirmatn,sans-serif}td:first-child{display:block;margin-bottom:6px}td:first-child:before{display:none}td:last-child{display:block;padding-top:10px;margin-top:6px;border-top:1px solid #29424f}td:last-child:before{display:none}.actions{justify-content:flex-end}.actions button{width:40px;min-height:40px}.source{font-size:11px;direction:rtl}.source span{direction:ltr;unicode-bidi:isolate;text-align:right}.empty-cell{display:block}#pair-card{margin:24px auto}.table-footer{gap:10px}.table-footer span{max-width:65%}}
+    .top-actions{display:flex;align-items:center;gap:12px}.top-actions button{min-height:30px;padding:3px 10px;font-size:11px}
+    .pin-box{direction:ltr;justify-content:center;gap:10px}.pin-box input{width:clamp(42px,12vw,58px);height:60px;min-height:60px;padding:4px;letter-spacing:0}#pair-btn{display:block;margin-inline:auto;margin-block-start:14px}
+    @media(max-width:800px){.top-actions span{display:none}}
+    dialog{width:min(560px,calc(100% - 32px));max-height:90vh;overflow:auto;background:var(--surface);color:var(--text);border:1px solid #344c57;border-radius:14px;padding:24px}dialog::backdrop{background:#000a}dialog label{margin-top:16px}dialog .row{justify-content:flex-end;margin-top:20px}#edit-poster-preview{width:90px;height:130px;object-fit:cover;border-radius:8px;margin-top:12px}#edit-msg{margin-top:12px}dialog input{direction:ltr}#edit-title{direction:rtl}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+    #message-dialog .row{justify-content:flex-start}#message-ok.danger{background:#b83240;border-color:#d84b59;color:#fff}#message-ok.danger:hover{background:#cf3949}
+  </style>
+</head>
+<body>
+  <div class="layout unpaired">
+    <aside class="hidden">
+      <div class="brand"><b>i</b>TV</div>
+      <div>پنل مدیریت تلویزیون</div>
+      <a class="side-link on" href="#library"><span>▦</span>کتابخانه</a>
+      <a class="side-link" href="#add"><span>＋</span>افزودن فیلم یا سریال</a>
+      <div class="connection"><b id="connection-state"><span class="dot">●</span>آمادهٔ اتصال به تلویزیون</b><small>iTV · شبکهٔ محلی</small></div><div class="aside-foot">iTV · پنل محلی</div>
+    </aside>
+    <main>
+      <header class="topbar"><span>iTV ‹ مدیریت کتابخانه</span><div class="top-actions"><span><i class="dot">●</i> اتصال محلی به تلویزیون</span><button id="logout-btn" class="hidden" type="button">خروج</button></div></header>
+      <section id="pair-card" class="panel">
+        <h1>ورود امن</h1>
+        <p>کد چهاررقمی روی تنظیمات تلویزیون را وارد کنید.</p>
+        <div class="pin-box" role="group" aria-label="کد چهاررقمی اتصال">
+          <input class="pin-digit" aria-label="رقم اول" maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+          <input class="pin-digit" aria-label="رقم دوم" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input class="pin-digit" aria-label="رقم سوم" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input class="pin-digit" aria-label="رقم چهارم" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+        <p><button class="primary" id="pair-btn" type="button">اتصال</button></p>
+        <p id="pair-msg" class="error" role="alert"></p>
+      </section>
+
+      <section id="app" class="hidden">
+        <div class="page-heading">
+          <div><div class="eyebrow">کتابخانهٔ تلویزیون</div><h1>کتابخانه</h1><p>فیلم و سریال را اضافه و کتابخانهٔ iTV را مدیریت کنید.</p></div><div class="count"><b id="library-count">۰</b>عنوان در کتابخانه</div>
+        </div>
+
+        <section class="panel" id="add">
+          <h2>افزودن فیلم یا سریال از تلوبیون</h2>
+          <p>لینک صفحهٔ فیلم یا سریال را وارد کنید؛ اطلاعات و قسمت‌ها خودکار پیدا می‌شوند.</p>
+          <div class="row">
+            <input aria-label="نشانی تلوبیون" id="url" dir="ltr" placeholder="https://telewebion.net/product/0x...">
+            <button id="preview-btn" type="button">پیش‌نمایش</button>
+            <button class="primary" id="add-btn" type="button">＋ افزودن به کتابخانه</button>
+          </div>
+          <p id="add-msg"></p>
+          <div id="preview" class="preview hidden"></div>
+        </section>
+
+        <section class="panel"><h2>ورود اطلاعات از فیلیمو</h2><p>لینک صفحه را بدهید؛ مشخصات و قسمت‌های منتشرشده دریافت می‌شود. سپس لینک فایل هر قسمت روی گوشی را وارد کنید. قسمت‌های جدید هنگام بازکردن کتابخانه (هر ۶ ساعت) یا با دکمهٔ به‌روزرسانی اضافه می‌شوند.</p><form id="filimo-form" class="row"><input id="filimo-url" aria-label="لینک صفحهٔ فیلیمو" type="url" dir="ltr" placeholder="https://www.filimo.com/n/h78m0" required><button id="filimo-add" class="primary">دریافت اطلاعات</button></form><p id="filimo-msg" role="status"></p></section>
+        <section class="panel"><h2>فیلم و سریال شخصی از گوشی</h2><p>مشخصات و فصل‌ها را خودتان تعریف کنید و لینک مستقیم فایل‌های WebDAV را بدهید. هنگام پخش، گوشی و سرویس WebDAV باید در دسترس تلویزیون باشند.</p><button type="button" id="manual-add" class="primary">＋ افزودن عنوان شخصی / WebDAV</button></section>
+        <section class="panel" id="library">
+          <h2>کتابخانه</h2>
+          <table>
+            <thead><tr><th>سریال</th><th>ساختار</th><th>منبع</th><th>وضعیت</th><th>مدیریت</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table><div class="table-footer"><span><i class="dot">●</i> کتابخانه با همین تلویزیون همگام است</span><span id="table-count"></span></div>
+        </section>
+      </section>
+    </main>
+  </div>
+  <dialog id="edit-dialog" aria-labelledby="edit-heading">
+    <form id="edit-form" novalidate>
+      <h2 id="edit-heading">ویرایش فیلم یا سریال</h2>
+      <label for="edit-title">نام نمایشی</label><input id="edit-title" autocomplete="off">
+      <label for="edit-url">لینک صفحهٔ تلوبیون</label><input id="edit-url" type="url" required>
+      <p class="hint">با تغییر لینک، اطلاعات و قسمت‌ها از منبع جدید نوسازی می‌شوند.</p>
+      <label for="edit-poster">لینک پوستر</label><input id="edit-poster" type="url" placeholder="https://…">
+      <p class="hint">لینک تصویر را وارد کنید یا فایل پوستر را از لپ‌تاپ انتخاب کنید.</p>
+      <label for="edit-file">آپلود پوستر روی تلویزیون</label>
+      <input id="edit-file" class="hidden" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
+      <button id="edit-choose-file" type="button">انتخاب تصویر از لپ‌تاپ</button>
+      <p class="hint">JPG، PNG یا WebP، حداکثر ۸ مگابایت. فایل در حافظهٔ خود اپ روی تلویزیون می‌ماند؛ برای نمایش آن نیازی به روشن‌بودن لپ‌تاپ نیست.</p>
+      <p id="edit-file-status" class="hint"></p>
+      <button id="edit-reset-poster" type="button">استفاده از پوستر خودکار</button>
+      <img id="edit-poster-preview" class="hidden" alt="پیش‌نمایش پوستر" referrerpolicy="no-referrer">
+      <label for="edit-backdrop">لینک تصویر هدر</label><input id="edit-backdrop" type="url" placeholder="https://…">
+      <p class="hint">تصویر افقی ۱۶:۹، پیشنهاد ۱۹۲۰×۱۰۸۰. در هوم و صفحهٔ فیلم/سریال نمایش داده می‌شود.</p>
+      <input id="edit-backdrop-file" class="hidden" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
+      <button id="edit-backdrop-choose" type="button">انتخاب هدر از لپ‌تاپ</button>
+      <p id="edit-backdrop-status" class="hint"></p>
+      <button id="edit-backdrop-reset" type="button">استفاده از هدر خودکار</button>
+      <img id="edit-backdrop-preview" class="hidden" alt="پیش‌نمایش هدر" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;margin-top:12px">
+      <p id="edit-msg" role="alert"></p>
+      <div class="row"><button id="edit-cancel" type="button">لغو</button><button id="edit-save" class="primary" type="submit">ذخیره</button></div>
+    </form>
+  </dialog>
+  <dialog id="message-dialog" aria-labelledby="message-heading">
+    <h2 id="message-heading"></h2><p id="message-body"></p>
+    <div class="row"><button id="message-ok" class="primary" type="button">باشه</button><button id="message-cancel" type="button">لغو</button></div>
+  </dialog>
+<dialog id="manual-dialog">
+<form id="manual-form">
+  <header class="manual-header"><div><small>کتابخانهٔ شخصی</small><h2 id="manual-heading"></h2></div><button type="button" id="manual-close" aria-label="بستن فرم">×</button></header>
+  <div class="manual-body">
+    <section class="manual-section"><h3>مشخصات عنوان</h3>
+      <div class="manual-meta"><label for="manual-title">نام فیلم یا سریال<input id="manual-title" required maxlength="300" placeholder="مثلاً خانهٔ ما"></label>
+      <label for="manual-type">نوع عنوان<select id="manual-type"><option value="series">سریال</option><option value="movie">فیلم (یک فایل)</option></select></label></div>
+      <label for="manual-description">توضیحات <small>اختیاری</small><textarea id="manual-description" rows="2" maxlength="10000" placeholder="خلاصهٔ داستان یا توضیح دلخواه"></textarea></label>
+      <div class="manual-art">
+        <div class="manual-art-card"><label for="manual-poster">پوستر <small>اختیاری</small></label><input id="manual-poster" dir="ltr" placeholder="https://…"><label class="manual-upload">انتخاب تصویر از دستگاه<input id="manual-poster-file" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+        <div class="manual-art-card"><label for="manual-backdrop">تصویر هدر <small>اختیاری</small></label><input id="manual-backdrop" dir="ltr" placeholder="https://…"><label class="manual-upload">انتخاب تصویر از دستگاه<input id="manual-backdrop-file" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+      </div>
+    </section>
+    <details class="manual-auth"><summary>اطلاعات ورود WebDAV <small>اگر سرور رمز دارد</small></summary><p id="manual-auth-note"></p><div class="manual-art"><label for="manual-user">نام کاربری<input id="manual-user" autocomplete="off" dir="ltr"></label><label for="manual-password">رمز عبور<input id="manual-password" type="password" autocomplete="new-password" dir="ltr"></label></div><label class="manual-check"><input id="manual-clear" type="checkbox"> حذف اطلاعات ورود ذخیره‌شده</label><p>اطلاعات ورود روی تلویزیون ذخیره می‌شود. برای ارتباط رمزگذاری‌شده از HTTPS استفاده کنید.</p></details>
+    <section class="manual-section"><div class="manual-section-heading"><div><h3>فصل‌ها و فایل‌ها</h3><p>لینک مستقیم فایل روی گوشی را وارد کنید؛ نه لینک پوشه یا صفحه.</p></div><button type="button" id="manual-add-episode">＋ افزودن قسمت</button></div><div id="manual-episodes"></div></section>
+  </div>
+  <footer class="manual-footer"><p id="manual-msg" class="error" role="status"></p><div><button type="button" id="manual-cancel">لغو</button><button id="manual-save" class="primary" type="submit">ذخیره در کتابخانه</button></div></footer>
+</form></dialog>
+<style>
+#manual-dialog{width:min(880px,calc(100vw - 32px));max-width:880px;max-height:92vh;padding:0;overflow:hidden;border-radius:18px}
+#manual-form{display:flex;flex-direction:column;max-height:92vh;font-size:14px}
+#manual-form *{box-sizing:border-box}
+.manual-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #29404a;flex:none;background:#142129}
+.manual-header small{font-size:11px;color:#8ca2ad}.manual-header h2{font-size:20px;line-height:1.6;margin:3px 0 0}.manual-header button{width:36px;height:36px;padding:0;font-size:24px;background:transparent;border:0;color:#a9b9c0}
+.manual-body{overflow-y:auto;min-height:0;padding:0 24px;overscroll-behavior:contain}.manual-section{padding:20px 0}.manual-section h3{font-size:15px;margin:0 0 16px}.manual-meta{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:16px}.manual-art{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#manual-form label{display:block;margin:0 0 14px;font-size:12px;color:#a6b9c2;min-width:0}#manual-form label small{font-size:10px;color:#728b96;margin-inline-start:6px}
+#manual-form input:not([type=checkbox]):not([type=file]),#manual-form select,#manual-form textarea{display:block;width:100%;min-height:42px;margin-top:7px;font:inherit;font-size:14px;line-height:1.6;color:#f3fbfc;background:#0a151b;border:1px solid #344c57;border-radius:9px;padding:9px 12px;outline:none}
+#manual-form input:focus,#manual-form select:focus,#manual-form textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #20dce61c}#manual-title,#manual-description{direction:rtl}#manual-form textarea{resize:vertical;min-height:76px}
+.manual-art-card{padding:14px;border:1px solid #29404a;border-radius:12px;background:#101c23}.manual-art-card>label{margin:0!important}#manual-form .manual-upload{position:relative;display:block;margin:10px 0 0!important;padding:9px;text-align:center;cursor:pointer;color:#b5dce4;border:1px dashed #3a5661;border-radius:8px;font-size:12px}.manual-upload input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;min-height:0;padding:0}.manual-upload:focus-within{outline:2px solid var(--cyan)}
+.manual-auth{border:1px solid #29404a;border-radius:12px;padding:14px;margin:0 0 4px;background:#101c23}.manual-auth summary{cursor:pointer;font-size:14px;color:#e3eef2}.manual-auth summary small{color:#829ca8;font-size:11px;margin-inline-start:8px}.manual-auth p{font-size:12px;color:#8fa5af;line-height:1.8}.manual-auth .manual-art{margin-top:14px}#manual-form .manual-check{display:flex;align-items:center;gap:8px;margin:0}#manual-clear{display:inline;width:16px;height:16px;min-height:0;margin:0;accent-color:var(--cyan)}
+.manual-section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.manual-section-heading h3{margin:0 0 6px}.manual-section-heading p{font-size:12px;color:#8fa5af;margin:0 0 12px}.manual-section-heading button{flex:none}
+.manual-episode{border:1px solid #304651;border-radius:12px;padding:16px;margin-top:14px;display:grid;grid-template-columns:76px 76px minmax(0,1fr);gap:0 14px;background:#111e25}.manual-episode .manual-url,.manual-episode .row,.manual-episode small{grid-column:1/-1}.manual-episode .row{justify-content:flex-start;margin:0;gap:8px}.manual-episode .row button{min-height:34px;font-size:12px}.manual-episode small:empty{display:none}.manual-episode small{color:#a0c4cd;line-height:1.8;margin-top:8px}.manual-footer{flex:none;padding:14px 24px;border-top:1px solid #29404a;background:#142129}.manual-footer>div{display:flex;justify-content:flex-end;gap:10px}.manual-footer p{font-size:12px;margin:0 0 10px}.manual-footer p:empty{display:none}
+@media(max-width:600px){#manual-dialog{width:calc(100vw - 16px);max-height:94dvh}#manual-form{max-height:94dvh}.manual-header{padding:14px 16px}.manual-header h2{font-size:17px}.manual-body{padding:0 16px}.manual-meta{grid-template-columns:minmax(0,1fr) 110px;gap:10px}.manual-art{grid-template-columns:1fr}.manual-section-heading{align-items:flex-start}.manual-section-heading button{font-size:11px;padding:6px}.manual-episode{grid-template-columns:1fr 1fr;padding:12px;gap:0 10px}.manual-episode .manual-episode-title{grid-column:1/-1}.manual-footer{padding:12px 16px}.manual-footer>div button{flex:1;min-height:42px}}
+</style>
+  <script>
+    const tokenKey = "itv-token";
+    let token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey) || "";
+    if (token) localStorage.setItem(tokenKey, token);
+    sessionStorage.removeItem(tokenKey);
+    let lastUrl = "";
+    let libraryItems = [];
+    let editingId = null;
+    let selectedPoster = "";
+    let selectedPosterPreview = "";
+    let automaticPosterPreview = "";
+    let uploadingPoster = false;
+    let selectedBackdrop = "", selectedBackdropPreview = "", automaticBackdropPreview = "";
+
+    const $ = (id) => document.getElementById(id);
+    const digits = (value) => String(value ?? "").replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+    const asciiDigits = (value) => String(value ?? "")
+      .replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+      .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d))
+      .replace(/\D/g, "");
+    const pinInputs = Array.from(document.querySelectorAll(".pin-digit"));
+
+    function fillPin(value, start = 0) {
+      const chars = asciiDigits(value).slice(0, pinInputs.length - start);
+      [...chars].forEach((char, offset) => { pinInputs[start + offset].value = char; });
+      pinInputs[Math.min(start + chars.length, pinInputs.length - 1)].focus();
+    }
+
+    pinInputs.forEach((input, index) => {
+      input.addEventListener("input", () => {
+        const value = asciiDigits(input.value);
+        input.value = value.slice(0, 1);
+        if (value.length > 1) fillPin(value.slice(1), index + 1);
+        else if (value && index < pinInputs.length - 1) pinInputs[index + 1].focus();
+      });
+      input.addEventListener("paste", e => {
+        e.preventDefault();
+        fillPin(e.clipboardData.getData("text"), index);
+      });
+      input.addEventListener("keydown", e => {
+        if (e.key === "Backspace" && !input.value && index > 0) {
+          pinInputs[index - 1].value = "";
+          pinInputs[index - 1].focus();
+        }
+        if (e.key === "ArrowLeft" && index > 0) pinInputs[index - 1].focus();
+        if (e.key === "ArrowRight" && index < pinInputs.length - 1) pinInputs[index + 1].focus();
+        if (e.key === "Enter") $("pair-btn").click();
+      });
+    });
+
+    async function api(path, options = {}) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+      if (token) headers["X-ITV-Token"] = token;
+      const res = await fetch(path, Object.assign({}, options, { headers }));
+      const text = await res.text();
+      let body = {};
+      try { body = text ? JSON.parse(text) : {}; } catch (e) { body = { error: text }; }
+      if (!res.ok) {
+        const err = new Error(body.error || "خطای درخواست");
+        err.status = res.status;
+        throw err;
+      }
+      return body;
+    }
+
+    function showPaired(ready) {
+      document.querySelector(".layout").classList.toggle("unpaired", !ready);
+      document.querySelector("aside").classList.toggle("hidden", !ready);
+      $("pair-card").classList.toggle("hidden", ready);
+      $("app").classList.toggle("hidden", !ready);
+      $("logout-btn").classList.toggle("hidden", !ready);
+      $("connection-state").textContent = ready ? "● تلویزیون متصل است" : "آمادهٔ اتصال به تلویزیون";
+    }
+
+    function clearAuth() {
+      token = "";
+      localStorage.removeItem(tokenKey);
+      sessionStorage.removeItem(tokenKey);
+      pinInputs.forEach(input => { input.value = ""; });
+      showPaired(false);
+    }
+
+    async function refreshList() {
+      const data = await api("/api/series");
+      libraryItems = data.items || [];
+      const rows = $("rows");
+      $("library-count").textContent = digits((data.items || []).length);
+      $("table-count").textContent = "نمایش " + digits((data.items || []).length) + " عنوان";
+      rows.innerHTML = "";
+      (data.items || []).forEach((item) => {
+        const tr = document.createElement("tr");
+        const seasons = item.seasonCount != null ? digits(item.seasonCount) + " فصل" : "—";
+        const episodes = item.episodeCount != null ? digits(item.episodeCount) + " قسمت" : "—";
+        tr.innerHTML = `
+          <td data-label="عنوان"><div class="library-title">${item.posterUrl ? `<img src="${escapeHtml(item.posterUrl)}" alt="">` : ""}<div><strong>${escapeHtml(item.title)}</strong><br><small>${item.isMovie ? "فیلم سینمایی" : item.kind === "webdav" ? "سریال شخصی" : "سریال تلوبیون"}</small></div></div></td>
+          <td data-label="ساختار"><span>${item.isMovie ? "فیلم سینمایی · " + digits(item.durationMinutes) + " دقیقه" : seasons + " · " + episodes}</span></td>
+          <td class="source" data-label="منبع"><span>${escapeHtml(item.kind)} / ${escapeHtml(item.sourceId)}</span></td>
+          <td data-label="وضعیت"><span>${escapeHtml(stateLabel(item))}</span></td>
+          <td data-label="مدیریت"><div class="actions">
+            <button data-act="refresh" data-id="${item.id}" aria-label="نوسازی" title="نوسازی"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 12M4 12l2.3 6A7 7 0 0 0 18 17"/></svg></button>
+            <button data-act="edit" data-id="${item.id}" aria-label="ویرایش" title="ویرایش"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 11-11 4 4-11 11-5 1zM13 7l4 4"/></svg></button>
+            <button class="danger" data-act="delete" data-id="${item.id}" aria-label="حذف" title="حذف"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 10v8M14 10v8"/></svg></button>
+          </div></td>`;
+        rows.appendChild(tr);
+      });
+      if (!(data.items || []).length) {
+        rows.innerHTML = "<tr><td class='empty-cell' colspan='5'>کتابخانه خالی است.</td></tr>";
+      }
+    }
+
+    function stateLabel(item) {
+      if (item.importState === "RUNNING") return "در حال ورود…";
+      if (item.importState === "QUEUED") return "در صف";
+      if (item.importState === "ERROR") return item.importError || "خطا";
+      return "آماده";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[ch]));
+    }
+
+    $("pair-btn").onclick = async () => {
+      $("pair-msg").textContent = "";
+      const pin = pinInputs.map(input => asciiDigits(input.value)).join("");
+      if (pin.length !== 4) {
+        $("pair-msg").textContent = "کد چهاررقمی را کامل وارد کنید.";
+        pinInputs.find(input => !input.value)?.focus();
+        return;
+      }
+      try {
+        const data = await api("/api/pair", { method: "POST", body: JSON.stringify({ pin }) });
+        token = data.token;
+        localStorage.setItem(tokenKey, token);
+        showPaired(true);
+        await refreshList();
+      } catch (e) {
+        $("pair-msg").textContent = e.message;
+      }
+    };
+
+    $("logout-btn").onclick = async () => {
+      try {
+        await api("/api/logout", { method: "POST" });
+        clearAuth();
+      } catch (e) {
+        if (e.status === 401) clearAuth();
+        else await themedMessage("خطا", e.message);
+      }
+    };
+
+    $("preview-btn").onclick = async () => {
+      $("add-msg").textContent = "";
+      lastUrl = $("url").value;
+      try {
+        const data = await api("/api/preview", { method: "POST", body: JSON.stringify({ url: lastUrl }) });
+        $("preview").classList.remove("hidden");
+        $("preview").innerHTML = `
+          ${data.posterUrl ? `<img src="${escapeHtml(data.posterUrl)}" alt="">` : ""}
+          <div>
+            <strong>${escapeHtml(data.title)}</strong>
+            <div class="preview-meta">${escapeHtml(data.description || data.kindLabel)}</div>
+            <div>${data.isMovie ? digits(data.durationMinutes) + " دقیقه" : data.seasonCount != null ? digits(data.seasonCount) + " فصل" : ""}</div>
+          </div>`;
+        $("add-msg").className = "ok";
+        $("add-msg").textContent = "پیش‌نمایش آماده است";
+      } catch (e) {
+        $("add-msg").className = "error";
+        $("add-msg").textContent = e.message;
+      }
+    };
+
+    $("add-btn").onclick = async () => {
+      $("add-msg").textContent = "";
+      try {
+        await api("/api/series", { method: "POST", body: JSON.stringify({ url: $("url").value || lastUrl }) });
+        $("add-msg").className = "ok";
+        $("add-msg").textContent = "به صف ورود اضافه شد";
+        await refreshList();
+      } catch (e) {
+        $("add-msg").className = "error";
+        $("add-msg").textContent = e.message;
+      }
+    };
+
+    $("rows").onclick = async (event) => {
+      const btn = event.target.closest("button");
+      if (!btn) return;
+      const id = btn.getAttribute("data-id");
+      const act = btn.getAttribute("data-act");
+      try {
+        if (act === "refresh") {
+          await api("/api/series/" + id + "/refresh", { method: "POST" });
+        } else if (act === "delete") {
+          if (!await themedMessage("حذف عنوان", "حذف این عنوان از کتابخانه؟", true)) return;
+          await api("/api/series/" + id, { method: "DELETE" });
+        } else if (act === "edit") {
+          const item = libraryItems.find(item => String(item.id) === id);
+          if (!item) return;
+          if (item.kind === "webdav") {openManual(item);return;}
+          editingId = id;
+          $("edit-heading").textContent = "ویرایش «" + item.title + "»";
+          $("edit-title").value = item.localTitle || "";
+          $("edit-title").placeholder = item.sourceTitle;
+          $("edit-url").value = item.pageUrl;
+          selectedPoster = item.customPosterUrl?.startsWith("/posters/") ? item.customPosterUrl : "";
+          selectedPosterPreview = selectedPoster ? item.posterUrl : "";
+          automaticPosterPreview = item.automaticPosterUrl || "";
+          $("edit-poster").value = selectedPoster ? "" : item.customPosterUrl || "";
+          $("edit-file").value = "";
+          $("edit-file-status").textContent = selectedPoster ? "پوستر در حافظهٔ تلویزیون ذخیره شده است." : "";
+          $("edit-msg").textContent = "";
+          selectedBackdrop = item.customBackdropUrl?.startsWith("/posters/") ? item.customBackdropUrl : "";
+          selectedBackdropPreview = selectedBackdrop ? item.backdropUrl : "";
+          automaticBackdropPreview = item.automaticBackdropUrl || "";
+          $("edit-backdrop").value = selectedBackdrop ? "" : item.customBackdropUrl || "";
+          $("edit-backdrop-file").value = "";
+          $("edit-backdrop-status").textContent = selectedBackdrop ? "هدر در حافظهٔ تلویزیون ذخیره شده است." : "";
+          updateBackdropPreview();
+          updatePosterPreview();
+          $("edit-dialog").showModal();
+          return;
+        }
+        await refreshList();
+      } catch (e) {
+        await themedMessage("خطا", e.message);
+      }
+    };
+
+    function themedMessage(title, message, confirmation = false) {
+      return new Promise(resolve => {
+        const dialog = $("message-dialog");
+        $("message-heading").textContent = title;
+        $("message-body").textContent = message;
+        $("message-cancel").classList.toggle("hidden", !confirmation);
+        $("message-ok").textContent = confirmation ? "حذف" : "باشه";
+        $("message-ok").classList.toggle("danger", confirmation);
+        let accepted = false;
+        $("message-ok").onclick = () => { accepted = true; dialog.close(); };
+        $("message-cancel").onclick = () => dialog.close();
+        dialog.addEventListener("close", () => resolve(accepted), {once:true});
+        dialog.showModal();
+        (confirmation ? $("message-cancel") : $("message-ok")).focus();
+      });
+    }
+
+    function updatePosterPreview() {
+      const image = $("edit-poster-preview");
+      const item = libraryItems.find(item => String(item.id) === editingId);
+      const url = $("edit-poster").value.trim() || selectedPosterPreview || automaticPosterPreview;
+      image.classList.toggle("hidden", !url);
+      if (url) image.src = url; else image.removeAttribute("src");
+    }
+    $("edit-poster").oninput = () => {
+      selectedPoster = ""; selectedPosterPreview = "";
+      $("edit-file-status").textContent = "";
+      updatePosterPreview();
+    };
+    $("edit-reset-poster").onclick = () => {
+      selectedPoster = ""; selectedPosterPreview = "";
+      $("edit-poster").value = ""; $("edit-file").value = "";
+      $("edit-file-status").textContent = "پس از ذخیره، پوستر خودکار استفاده می‌شود.";
+      updatePosterPreview();
+    };
+    $("edit-choose-file").onclick = () => $("edit-file").click();
+    $("edit-file").onchange = async () => {
+      const file = $("edit-file").files[0];
+      if (!file) return;
+      if (file.size > 8 * 1024 * 1024) {
+        $("edit-msg").className = "error";
+        $("edit-msg").textContent = "حجم پوستر باید حداکثر ۸ مگابایت باشد.";
+        $("edit-file").value = ""; return;
+      }
+      uploadingPoster = true;
+      setEditBusy(true);
+      $("edit-msg").className = "";
+      $("edit-msg").textContent = "در حال آپلود پوستر…";
+      try {
+        const result = await api("/api/posters", {method:"POST", body:file, headers:{"Content-Type":file.type || "application/octet-stream"}});
+        selectedPoster = result.customPosterUrl; selectedPosterPreview = result.posterUrl;
+        $("edit-poster").value = "";
+        $("edit-file-status").textContent = `«${file.name}» روی تلویزیون آپلود شد؛ برای اعمال، ذخیره را بزنید.`;
+        $("edit-msg").textContent = "";
+        updatePosterPreview();
+      } catch(error) {
+        $("edit-msg").className = "error"; $("edit-msg").textContent = error.message;
+      } finally { uploadingPoster = false; setEditBusy(false); }
+    };
+    function updateBackdropPreview() {
+      const image = $("edit-backdrop-preview");
+      const url = $("edit-backdrop").value.trim() || selectedBackdropPreview || automaticBackdropPreview;
+      image.classList.toggle("hidden", !url);
+      if (url) image.src = url; else image.removeAttribute("src");
+    }
+    $("edit-backdrop").oninput = () => {
+      selectedBackdrop = ""; selectedBackdropPreview = "";
+      $("edit-backdrop-status").textContent = "";
+      updateBackdropPreview();
+    };
+    $("edit-backdrop-reset").onclick = () => {
+      selectedBackdrop = ""; selectedBackdropPreview = "";
+      $("edit-backdrop").value = ""; $("edit-backdrop-file").value = "";
+      $("edit-backdrop-status").textContent = "پس از ذخیره، هدر خودکار استفاده می‌شود.";
+      updateBackdropPreview();
+    };
+    $("edit-backdrop-preview").onerror = () => $("edit-backdrop-preview").classList.add("hidden");
+    $("edit-backdrop-choose").onclick = () => $("edit-backdrop-file").click();
+    $("edit-backdrop-file").onchange = async () => {
+      const file = $("edit-backdrop-file").files[0];
+      if (!file) return;
+      if (file.size > 8 * 1024 * 1024) {
+        $("edit-msg").className = "error";
+        $("edit-msg").textContent = "حجم هدر باید حداکثر ۸ مگابایت باشد.";
+        $("edit-backdrop-file").value = ""; return;
+      }
+      setEditBusy(true);
+      $("edit-msg").className = "";
+      $("edit-msg").textContent = "در حال آپلود هدر…";
+      try {
+        const result = await api("/api/posters", {method:"POST", body:file, headers:{"Content-Type":file.type || "application/octet-stream"}});
+        selectedBackdrop = result.customPosterUrl; selectedBackdropPreview = result.posterUrl;
+        $("edit-backdrop").value = "";
+        $("edit-backdrop-status").textContent = `«${file.name}» روی تلویزیون ذخیره شد؛ برای اعمال، ذخیره را بزنید.`;
+        $("edit-msg").textContent = "";
+        updateBackdropPreview();
+      } catch(error) {
+        $("edit-msg").className = "error"; $("edit-msg").textContent = error.message;
+      } finally { setEditBusy(false); }
+    };
+    function setEditBusy(busy) {
+      ["edit-save", "edit-cancel", "edit-url", "edit-title", "edit-poster", "edit-file", "edit-choose-file", "edit-reset-poster", "edit-backdrop", "edit-backdrop-file", "edit-backdrop-choose", "edit-backdrop-reset"].forEach(id => $(id).disabled = busy);
+    }
+    $("edit-poster-preview").onerror = () => $("edit-poster-preview").classList.add("hidden");
+    $("edit-cancel").onclick = () => $("edit-dialog").close();
+    $("edit-dialog").addEventListener("close", () => {
+      document.querySelector(`button[data-act="edit"][data-id="${editingId}"]`)?.focus();
+    });
+    $("edit-dialog").addEventListener("cancel", event => {
+      if ($("edit-save").disabled) event.preventDefault();
+    });
+    $("edit-form").onsubmit = async event => {
+      event.preventDefault();
+      if ($("edit-save").disabled) return;
+      setEditBusy(true);
+      $("edit-msg").className = "";
+      $("edit-msg").textContent = "در حال ذخیره…";
+      try {
+        await api("/api/series/" + editingId, { method: "PATCH", body: JSON.stringify({
+          localTitle: $("edit-title").value, url: $("edit-url").value.trim(),
+          customPosterUrl: $("edit-poster").value.trim() || selectedPoster,
+          customBackdropUrl: $("edit-backdrop").value.trim() || selectedBackdrop
+        }) });
+        await refreshList();
+        $("edit-dialog").close();
+      } catch (error) {
+        $("edit-msg").className = "error";
+        $("edit-msg").textContent = error.message;
+      } finally {
+        setEditBusy(false);
+      }
+    };
+
+    let manualId = null, manualImported = false;
+    $('filimo-form').onsubmit=async event=>{
+      event.preventDefault(); $('filimo-add').disabled=true; $('filimo-msg').textContent='در حال دریافت اطلاعات و قسمت‌ها…';
+      try { const item=await api('/api/filimo',{method:'POST',body:JSON.stringify({url:$('filimo-url').value})});
+        await refreshList(); openManual(item); $('filimo-msg').textContent='اطلاعات دریافت شد؛ لینک فایل‌ها را وارد کنید.';
+      }catch(e){$('filimo-msg').textContent=e.message;}finally{$('filimo-add').disabled=false;}
+    };
+    function addManualEpisode(e = {}) {
+      const row = document.createElement('div');
+      row.className = 'manual-episode';
+      row.dataset.episode = e.sourceEpisodeId || '';
+      row.innerHTML = `<label>فصل<input class="ms" type="number" min="1" max="10000" value="${Number(e.seasonNumber)||1}" required></label><label>قسمت<input class="mn" type="number" min="1" max="10000" value="${Number(e.displayNumber)||$('manual-episodes').children.length+1}" required></label><label class="manual-episode-title">عنوان قسمت (اختیاری)<input class="mt" value="${escapeHtml(e.title||'')}"></label><label class="manual-url">لینک مستقیم فایل<input class="mu" dir="ltr" type="url" placeholder="http://192.168.1.20:8080/Movies/video.mp4" value="${escapeHtml(e.mediaUrl||'')}" required></label><div class="row"><button type="button" class="test">آزمون فایل</button><button type="button" class="remove danger">حذف قسمت</button></div><small class="test-result" role="status"></small>`;
+      row.querySelector('.mu').required = !manualImported;
+      row.querySelector('.remove').onclick = () => row.remove();
+      row.querySelector('.test').onclick = async () => {
+        const status = row.querySelector('.test-result'), btn = row.querySelector('.test');
+        status.textContent = 'در حال اتصال به گوشی…'; btn.disabled = true;
+        try {
+          const result = await api('/api/webdav/check',{method:'POST',body:JSON.stringify({id:manualId,url:row.querySelector('.mu').value,...manualCredentials()})});
+          status.textContent = result.rangeSupported ? 'فایل در دسترس است؛ پرش زمانی پشتیبانی می‌شود.' : 'فایل در دسترس است؛ سرور از Range پشتیبانی نمی‌کند و پرش زمانی ممکن است کار نکند.';
+        } catch(e) {status.textContent=e.message;} finally {btn.disabled=false;}
+      };
+      $('manual-episodes').appendChild(row);
+    }
+    function manualCredentials() {
+      const data = {password:$('manual-password').value,clearCredentials:$('manual-clear').checked};
+      if ($('manual-user').value || !manualId) data.username=$('manual-user').value;
+      return data;
+    }
+    function openManual(item = null) {
+      manualId = item?.id || null; manualImported = item?.metadataProvider === 'filimo';
+      $('manual-form').reset();
+      $('manual-heading').textContent = manualImported ? 'فایل‌های WebDAV · '+item.title : item ? 'ویرایش فیلم یا سریال شخصی' : 'افزودن فیلم یا سریال شخصی';
+      $('manual-title').value = item?.title || '';
+      $('manual-type').value = item?.isMovie ? 'movie' : 'series';
+      $('manual-description').value = item?.description || '';
+      $('manual-poster').value = item?.customPosterUrl || '';
+      $('manual-poster').placeholder = item?.automaticPosterUrl ? 'پوستر فیلیمو خودکار انتخاب شده است' : '';
+      $('manual-backdrop').placeholder = item?.automaticBackdropUrl ? 'تصویر فیلیمو خودکار انتخاب شده است' : '';
+      $('manual-backdrop').value = item?.customBackdropUrl || '';
+      $('manual-auth-note').textContent = item?.credentialsConfigured ? 'اطلاعات ورود ذخیره شده است. خالی گذاشتن نام کاربری و رمز، اطلاعات قبلی را نگه می‌دارد.' : 'اگر WebDAV رمز ندارد، این دو فیلد را خالی بگذارید.';
+      $('manual-msg').textContent = manualImported ? 'لینک فایل‌ها را می‌توانید به‌تدریج وارد کنید؛ قسمت‌های بدون لینک هنوز قابل پخش نیستند.' : '';
+      $('manual-episodes').innerHTML = '';
+      (item?.episodes || [{}]).forEach(addManualEpisode);
+      $('manual-dialog').showModal();
+    }
+    $('manual-add').onclick=()=>openManual();
+    $('manual-add-episode').onclick=()=>addManualEpisode();
+    $('manual-close').onclick=()=>$('manual-dialog').close();
+    $('manual-cancel').onclick=()=>$('manual-dialog').close();
+    $('manual-dialog').addEventListener('close',()=>{$('manual-password').value='';});
+    for (const kind of ['poster','backdrop']) $('manual-'+kind+'-file').onchange=async event=>{
+      const file=event.target.files[0]; if(!file)return;
+      $('manual-save').disabled=true;
+      try {
+        if(file.size>8*1024*1024)throw Error('تصویر باید حداکثر ۸ مگابایت باشد');
+        const result=await api('/api/posters',{method:'POST',body:file,headers:{'Content-Type':file.type||'application/octet-stream'}});
+        $('manual-'+kind).value=result.customPosterUrl;
+        $('manual-msg').textContent='تصویر روی تلویزیون آپلود شد؛ برای اعمال، ذخیره کنید.';
+      } catch(e){$('manual-msg').textContent=e.message;} finally{$('manual-save').disabled=false;}
+    };
+    $('manual-form').onsubmit=async event=>{
+      event.preventDefault();
+      $('manual-save').disabled=true;
+      try {
+        const episodes=[...$('manual-episodes').children].map(row=>({sourceEpisodeId:row.dataset.episode,
+          seasonNumber:Number(row.querySelector('.ms').value),displayNumber:Number(row.querySelector('.mn').value),
+          title:row.querySelector('.mt').value,url:row.querySelector('.mu').value}));
+        await api('/api/manual'+(manualId?'/'+manualId:''),{method:manualId?'PATCH':'POST',body:JSON.stringify({
+          title:$('manual-title').value,isMovie:$('manual-type').value==='movie',description:$('manual-description').value,
+          posterUrl:$('manual-poster').value,backdropUrl:$('manual-backdrop').value,episodes,...manualCredentials()})});
+        $('manual-dialog').close();await refreshList();
+      } catch(e){$('manual-msg').textContent=e.message;} finally{$('manual-save').disabled=false;}
+    };
+
+    (async () => {
+      if (!token) { showPaired(false); return; }
+      showPaired(true);
+      try {
+        await refreshList();
+      } catch (e) {
+        if (e.status === 401) clearAuth();
+        else $("connection-state").textContent = "● تلویزیون در دسترس نیست";
+      }
+    })();
+    setInterval(() => {
+      if (token) refreshList().then(() => showPaired(true)).catch(e => {
+        if (e.status === 401) clearAuth();
+        else $("connection-state").textContent = "● تلویزیون در دسترس نیست";
+      });
+    }, 4000);
+  </script>
+</body>
+</html>

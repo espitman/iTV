@@ -67,6 +67,26 @@ class ImportCoordinator(
         return id
     }
 
+    suspend fun edit(id: Long, source: AllowedSource, localTitle: String?, customPosterUrl: String?,
+                     customBackdropUrl: String?) {
+        val current = repository.series(id) ?: error("عنوان پیدا نشد")
+        val changed = current.kind != source.kind || current.sourceId != source.sourceId
+        val preview = if (changed) client.preview(source) else null
+        require(preview == null || preview.isMovie == current.isMovie) {
+            "لینک فیلم را با فیلم و لینک سریال را با سریال جایگزین کنید"
+        }
+        val canonical = AllowedSource(source.kind, preview?.sourceId ?: source.sourceId)
+        val didChange = mutex.withLock {
+            repository.edit(id, canonical, localTitle, customPosterUrl,
+                preview?.title, preview?.posterUrl, preview?.description,
+                preview?.durationMinutes, preview?.backdropUrl, customBackdropUrl)
+        }
+        if (didChange) {
+            runningJob?.join()
+            resumePending()
+        }
+    }
+
     suspend fun refresh(id: Long) {
         if (!allowStart()) error("تعداد درخواست‌های نوسازی بیش از حد است")
         repository.setImportState(id, ImportState.QUEUED)

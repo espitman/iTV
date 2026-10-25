@@ -12,8 +12,8 @@ android {
         applicationId = "app.itv.prototype"
         minSdk = 23
         targetSdk = 35
-        versionCode = 26
-        versionName = "0.26"
+        versionCode = 31
+        versionName = "0.31"
     }
 
     buildTypes {

@@ -25,6 +25,8 @@ data class SeriesEntity(
     @ColumnInfo(defaultValue = "0") val isMovie: Boolean = false,
     @ColumnInfo(defaultValue = "0") val durationMinutes: Int = 0,
     val backdropUrl: String? = null,
+    val customPosterUrl: String? = null,
+    val customBackdropUrl: String? = null,
 )
 
 @Entity(

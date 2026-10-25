@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Startup window: dark app background with the app icon, shown before the first frame. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/bg" />
+    <item
+        android:width="96dp"
+        android:height="96dp"
+        android:drawable="@drawable/app_icon"
+        android:gravity="center" />
+</layer-list>

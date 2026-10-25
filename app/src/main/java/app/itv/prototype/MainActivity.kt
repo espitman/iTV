@@ -10,7 +10,10 @@ import android.graphics.Matrix
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.AttributeSet
+import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.widget.Button
@@ -27,6 +30,7 @@ import app.itv.prototype.core.LibrarySeries
 import app.itv.prototype.core.PlaybackRules
 import app.itv.prototype.core.persianDigits
 import app.itv.prototype.ui.CoverFill
+import app.itv.prototype.ui.CoverSkeleton
 import app.itv.prototype.ui.HomeLayout
 import app.itv.prototype.ui.ImageSize
 import app.itv.prototype.ui.LibraryGridActivity
@@ -35,6 +39,8 @@ import app.itv.prototype.ui.RtlShelfScrollView
 import app.itv.prototype.ui.SearchActivity
 import app.itv.prototype.ui.SeriesActivity
 import app.itv.prototype.ui.SettingsActivity
+import app.itv.prototype.ui.SkeletonBlockView
+import app.itv.prototype.ui.SkeletonViews
 import app.itv.prototype.ui.applyCinematicFocus
 import app.itv.prototype.ui.clipRound
 import app.itv.prototype.ui.ensureFocusId
@@ -44,12 +50,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 class MainActivity : Activity() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var observeJob: Job? = null
     private lateinit var empty: View
+    private lateinit var skeleton: View
+    private lateinit var launchSplash: View
+    private var splashDismissed = false
+    private var loaded = false
+    private lateinit var exitHint: View
+    private var exitDeadlineMs = 0L
+    private val hideExitHintRunnable = Runnable { hideExitHint() }
     private lateinit var library: LinearLayout
     private lateinit var libraryScroll: HomeLibraryScrollView
     private lateinit var continuePinned: LinearLayout
@@ -67,11 +81,16 @@ class MainActivity : Activity() {
     private var boundSignature: String? = null
     private lateinit var heroPlay: Button
     private lateinit var heroDetails: Button
+    private lateinit var heroSkeleton: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         empty = findViewById(R.id.empty)
+        skeleton = findViewById(R.id.homeSkeleton)
+        launchSplash = findViewById(R.id.launchSplash)
+        exitHint = findViewById(R.id.exitHint)
+        buildHomeSkeleton()
         library = findViewById(R.id.library)
         libraryScroll = findViewById(R.id.libraryScroll)
         continuePinned = findViewById(R.id.continuePinned)
@@ -84,6 +103,7 @@ class MainActivity : Activity() {
         settings = findViewById(R.id.settings)
         heroPlay = findViewById(R.id.heroPlay)
         heroDetails = findViewById(R.id.heroDetails)
+        heroSkeleton = findViewById(R.id.heroSkeleton)
         navHome = findViewById(R.id.navHome)
         navSeries = findViewById(R.id.navSeries)
         navMovies = findViewById(R.id.navMovies)
@@ -143,20 +163,85 @@ class MainActivity : Activity() {
     override fun onStart() {
         super.onStart()
         observeJob?.cancel()
-        observeJob = scope.launch { ItvApplication.instance.repository.observeLibrary().collect(::bind) }
+        setSkeletonVisible(!loaded && splashDismissed)
+        observeJob = scope.launch {
+            ItvApplication.instance.repository.observeLibrary()
+                .catch {
+                    loaded = true
+                    dismissLaunchSplash()
+                }
+                .collect(::bind)
+        }
     }
 
     override fun onStop() {
         observeJob?.cancel()
+        resetExitHint()
         super.onStop()
     }
 
     override fun onDestroy() {
+        exitHint.removeCallbacks(hideExitHintRunnable)
         scope.cancel()
         super.onDestroy()
     }
 
+    /**
+     * Back on Home arms a 5-second exit confirmation instead of leaving at once.
+     * A second Back inside the visible window removes the app task; the deadline
+     * is monotonic ([SystemClock.uptimeMillis]) and the hint is reset whenever
+     * Home leaves the foreground, so no stale window survives.
+     */
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK && event.repeatCount == 0) {
+            val now = SystemClock.uptimeMillis()
+            if (now < exitDeadlineMs) {
+                resetExitHint()
+                finishAndRemoveTask()
+                return true
+            }
+            exitDeadlineMs = now + EXIT_WINDOW_MS
+            showExitHint()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun showExitHint() {
+        exitHint.removeCallbacks(hideExitHintRunnable)
+        exitHint.visibility = View.VISIBLE
+        exitHint.postDelayed(hideExitHintRunnable, EXIT_WINDOW_MS)
+    }
+
+    private fun hideExitHint() {
+        exitHint.visibility = View.GONE
+    }
+
+    private fun resetExitHint() {
+        exitDeadlineMs = 0L
+        exitHint.removeCallbacks(hideExitHintRunnable)
+        hideExitHint()
+    }
+
+    private fun setSkeletonVisible(visible: Boolean) {
+        skeleton.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * The startup splash stays until Home's first render (data, empty or error), so
+     * the launcher never shows a blank window and no timer is involved. The Home
+     * skeleton waits behind it and covers any later load.
+     */
+    private fun dismissLaunchSplash() {
+        if (splashDismissed) return
+        splashDismissed = true
+        launchSplash.visibility = View.GONE
+        setSkeletonVisible(false)
+    }
+
     private fun bind(items: List<LibrarySeries>) {
+        loaded = true
+        dismissLaunchSplash()
         val previousFocusId = currentFocus?.id
         val stayOnHeader = currentFocus in setOf(settings, navHome, navSeries, navMovies, navSearch)
         (currentFocus?.tag as? Long)?.let { focusedSeriesId = it }
@@ -169,6 +254,7 @@ class MainActivity : Activity() {
             heroSeries = null
             shownHeroKey = null
             heroToken++
+            heroSkeleton.visibility = View.GONE
             boundSignature = null
             continuePinned.removeAllViews()
             continuePinned.visibility = View.GONE
@@ -357,13 +443,13 @@ class MainActivity : Activity() {
         if (continuePlayback) {
             val continueEp = series.continueEpisode
             val thumbUrl = continueEp?.imageUrl ?: series.backdropUrl ?: series.posterUrl
-            Pictures.load(thumbUrl, poster, R.drawable.bg_poster)
+            CoverSkeleton.load(thumbUrl, poster, R.drawable.bg_poster)
             bindProgress(card, continueEp, series)
         } else {
             val posterUrl = coverUrl(series)
             val posterFill = card.findViewById<ImageView>(R.id.posterFill)
             CoverFill.clear(posterFill)
-            Pictures.load(posterUrl, poster, R.drawable.bg_poster) { bitmap ->
+            CoverSkeleton.load(posterUrl, poster, R.drawable.bg_poster) { bitmap ->
                 bindPosterCover(poster, posterFill, bitmap)
             }
             val hasPoster = !posterUrl.isNullOrBlank()
@@ -483,6 +569,7 @@ class MainActivity : Activity() {
         ) ?: series.posterUrl ?: series.backdropUrl
 
     private fun artwork(series: LibrarySeries): String? {
+        series.customBackdropUrl?.let { return it }
         val episodeUrl = series.continueEpisode?.imageUrl
             ?: series.presentEpisodes.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl
         return HomeLayout.heroUrl(
@@ -515,6 +602,7 @@ class MainActivity : Activity() {
         val key = "${series.id}:${artwork(series).orEmpty()}"
         if (key == shownHeroKey) {
             heroToken++
+            heroSkeleton.visibility = View.GONE
             backdrop.animate().cancel()
             copy.animate().cancel()
             applyHeroCopy(series)
@@ -538,6 +626,7 @@ class MainActivity : Activity() {
             }
             applyHeroCopy(series)
             shownHeroKey = key
+            heroSkeleton.visibility = View.GONE
             backdrop.animate().alpha(1f).setDuration(HERO_FADE_IN_MS).start()
             copy.animate().alpha(1f).setDuration(HERO_FADE_IN_MS).start()
         }
@@ -550,6 +639,9 @@ class MainActivity : Activity() {
         if (hidden) {
             backdrop.alpha = 0f
             copy.alpha = 0f
+            heroSkeleton.visibility = View.VISIBLE
+        } else {
+            heroSkeleton.visibility = View.GONE
         }
         Pictures.load(url, backdrop, deferImage = true, onUnavailable = { settle(null) }) { bitmap ->
             settle(bitmap)
@@ -615,10 +707,102 @@ class MainActivity : Activity() {
         startActivity(Intent(this, SettingsActivity::class.java))
     }
 
+    /**
+     * Static shimmer placeholder mirroring the hero, hero copy and shelf rows.
+     * Built once; shown only until the first library emission (or error) and
+     * never rebuilt, so it cannot disturb focus or scrolling.
+     */
+    private fun buildHomeSkeleton() {
+        val host = skeleton as FrameLayout
+        host.removeAllViews()
+        val density = resources.displayMetrics.density
+        fun px(value: Float) = (value * density).toInt()
+        fun dim(id: Int) = resources.getDimensionPixelSize(id)
+        val pad = dim(R.dimen.home_pad)
+
+        host.addView(
+            SkeletonBlockView(this).apply { setRadiusDp(0f) },
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dim(R.dimen.home_hero_h), Gravity.TOP),
+        )
+
+        val copy = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            clipChildren = false
+            setPadding(pad, 0, pad, 0)
+        }
+        copy.addView(SkeletonViews.block(this, px(268f), px(38f), 6f))
+        copy.addView(
+            SkeletonViews.row(this, 2, px(54f), px(18f), px(8f), 9f),
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = px(10f) },
+        )
+        copy.addView(
+            SkeletonViews.row(this, 2, px(104f), dim(R.dimen.home_action_h), px(10f), 6f),
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = px(14f) },
+        )
+        host.addView(
+            copy,
+            FrameLayout.LayoutParams(
+                dim(R.dimen.home_hero_copy_w),
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP or Gravity.START,
+            ).apply { topMargin = px(118f) },
+        )
+
+        val shelves = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            clipChildren = false
+            clipToPadding = false
+            setPadding(pad, 0, pad, 0)
+        }
+        repeat(SKELETON_SECTIONS) { section ->
+            val continueRow = section == 0
+            shelves.addView(
+                SkeletonViews.block(this, px(120f), px(18f), 5f),
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = px(14f) },
+            )
+            shelves.addView(
+                SkeletonViews.row(
+                    this,
+                    SKELETON_POSTERS,
+                    if (continueRow) dim(R.dimen.home_continue_w) else dim(R.dimen.home_poster_w),
+                    if (continueRow) dim(R.dimen.home_continue_h) else dim(R.dimen.home_poster_h),
+                    dim(R.dimen.home_poster_gap),
+                    8f,
+                ),
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = px(6f) },
+            )
+        }
+        host.addView(
+            shelves,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP,
+            ).apply { topMargin = dim(R.dimen.home_hero_copy) },
+        )
+    }
+
     private companion object {
         const val HOME_CARD_SCALE = 1.04f
         const val HERO_FADE_OUT_MS = 120L
         const val HERO_FADE_IN_MS = 190L
+        const val SKELETON_SECTIONS = 3
+        const val SKELETON_POSTERS = 6
+        const val EXIT_WINDOW_MS = 5000L
     }
 }
 

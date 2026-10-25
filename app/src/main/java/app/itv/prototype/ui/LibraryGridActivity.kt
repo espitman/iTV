@@ -11,9 +11,9 @@ import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.GridView
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import app.itv.prototype.ItvApplication
-import app.itv.prototype.Pictures
 import app.itv.prototype.R
 import app.itv.prototype.core.HomeCatalog
 import app.itv.prototype.core.ImportState
@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 class LibraryGridActivity : Activity() {
@@ -31,7 +32,9 @@ class LibraryGridActivity : Activity() {
     private var observeJob: Job? = null
     private lateinit var grid: GridView
     private lateinit var adapter: SeriesAdapter
+    private lateinit var skeleton: View
     private var movies = false
+    private var loaded = false
     private var applied: LibraryGridLayout.Metrics? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +48,7 @@ class LibraryGridActivity : Activity() {
             if (movies) R.string.catalog_movies_chip else R.string.catalog_series_chip,
         )
         grid = findViewById(R.id.grid)
+        skeleton = findViewById(R.id.gridSkeleton)
         if (Build.VERSION.SDK_INT >= 26) grid.defaultFocusHighlightEnabled = false
         grid.selector = getDrawable(android.R.color.transparent)
         grid.stretchMode = GridView.NO_STRETCH
@@ -68,16 +72,24 @@ class LibraryGridActivity : Activity() {
     override fun onStart() {
         super.onStart()
         observeJob?.cancel()
+        setSkeletonVisible(!loaded)
         observeJob = scope.launch {
-            ItvApplication.instance.repository.observeLibrary().collect { items ->
-                val selected = grid.selectedItemPosition.coerceAtLeast(0)
-                adapter.items = HomeCatalog.all(items, movies)
-                adapter.notifyDataSetChanged()
-                if (adapter.count > 0) grid.post {
-                    grid.setSelection(selected.coerceAtMost(adapter.count - 1))
-                    grid.requestFocus()
+            ItvApplication.instance.repository.observeLibrary()
+                .catch {
+                    loaded = true
+                    setSkeletonVisible(false)
                 }
-            }
+                .collect { items ->
+                    val selected = grid.selectedItemPosition.coerceAtLeast(0)
+                    adapter.items = HomeCatalog.all(items, movies)
+                    adapter.notifyDataSetChanged()
+                    loaded = true
+                    setSkeletonVisible(false)
+                    if (adapter.count > 0) grid.post {
+                        grid.setSelection(selected.coerceAtMost(adapter.count - 1))
+                        grid.requestFocus()
+                    }
+                }
         }
     }
 
@@ -108,12 +120,51 @@ class LibraryGridActivity : Activity() {
         applied = metrics
         adapter.metrics = metrics
         grid.setPadding(padLeft, grid.paddingTop, padRight, grid.paddingBottom)
+        skeleton.setPadding(
+            padLeft,
+            resources.getDimensionPixelSize(R.dimen.catalog_grid_top),
+            padRight,
+            0,
+        )
+        buildGridSkeleton(metrics)
         grid.numColumns = metrics.columns
         grid.horizontalSpacing = metrics.gap
         grid.verticalSpacing = metrics.gap
         grid.columnWidth = metrics.columnWidth
         grid.stretchMode = GridView.NO_STRETCH
         adapter.notifyDataSetChanged()
+    }
+
+    private fun setSkeletonVisible(visible: Boolean) {
+        skeleton.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+
+    private fun buildGridSkeleton(metrics: LibraryGridLayout.Metrics) {
+        val host = skeleton as LinearLayout
+        host.removeAllViews()
+        repeat(SKELETON_ROWS) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutDirection = View.LAYOUT_DIRECTION_RTL
+                clipChildren = false
+            }
+            repeat(metrics.columns) { index ->
+                val cell = SkeletonViews.catalogCell(this, metrics.columnWidth, metrics.posterHeight)
+                val params = LinearLayout.LayoutParams(
+                    metrics.columnWidth,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                )
+                if (index > 0) params.marginStart = metrics.gap
+                row.addView(cell, params)
+            }
+            host.addView(
+                row,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = metrics.gap },
+            )
+        }
     }
 
     private inner class SeriesAdapter : BaseAdapter() {
@@ -148,7 +199,7 @@ class LibraryGridActivity : Activity() {
             val poster = card.findViewById<ImageView>(R.id.poster)
             val inner = card.findViewById<View>(R.id.cardInner)
             inner.clipRound(10f)
-            Pictures.load(LibraryGridLayout.coverUrl(series.posterUrl, series.backdropUrl), poster, R.drawable.bg_poster)
+            CoverSkeleton.load(LibraryGridLayout.coverUrl(series.posterUrl, series.backdropUrl), poster, R.drawable.bg_poster)
             card.findViewById<TextView>(R.id.title).text = series.title
             val meta = card.findViewById<TextView>(R.id.meta)
             meta.text = catalogMeta(series)
@@ -181,5 +232,6 @@ class LibraryGridActivity : Activity() {
 
     companion object {
         const val EXTRA_MOVIES = "movies"
+        private const val SKELETON_ROWS = 2
     }
 }

@@ -182,6 +182,7 @@ data class LibrarySeries(
     val isMovie: Boolean = false,
     val durationMinutes: Int = 0,
     val backdropUrl: String? = null,
+    val customBackdropUrl: String? = null,
 ) {
     val presentEpisodes: List<LibraryEpisode>
         get() = PresentationOrder.present(episodes)

@@ -14,6 +14,11 @@
         <item name="android:windowContentTransitions">false</item>
     </style>
 
+    <!-- Launcher theme: dark startup window with the app icon until the first frame. -->
+    <style name="Theme.ITV.Splash" parent="@style/Theme.ITV">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+
     <style name="Widget.ITV.TextView" parent="@android:style/Widget.Material.TextView">
         <item name="android:fontFamily">@font/vazirmatn_family</item>
     </style>

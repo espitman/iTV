@@ -1,6 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# webOS has its own platform version; Android APK signing remains unchanged.
+if [[ "${1:-}" == "--webos" ]]; then
+  shift
+  ITV_RELEASE_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+  command -v node >/dev/null || { echo 'Node.js is required.' >&2; exit 1; }
+  command -v ares-package >/dev/null || { echo 'webOS CLI is required.' >&2; exit 1; }
+  python3 "$ITV_RELEASE_ROOT/webos/tools/sync-design.py"
+  node --test "$ITV_RELEASE_ROOT"/webos/test/*.test.js
+  node --check "$ITV_RELEASE_ROOT/webos/app/app.js"
+  node --check "$ITV_RELEASE_ROOT/webos/service/service.js"
+  ares-package --check "$ITV_RELEASE_ROOT/webos/app" "$ITV_RELEASE_ROOT/webos/service"
+  mkdir -p "$ITV_RELEASE_ROOT/release/webos"
+  ITV_WEBOS_VERSION="$(node -p "require(process.argv[1]).version" "$ITV_RELEASE_ROOT/webos/app/appinfo.json")"
+  ITV_WEBOS_OUTPUT="$ITV_RELEASE_ROOT/release/webos/app.itv.webos_${ITV_WEBOS_VERSION}_all.ipk"
+  [[ ! -e "$ITV_WEBOS_OUTPUT" ]] || { echo 'Release already exists. Increase the webOS version and versionCode.' >&2; exit 1; }
+  node "$ITV_RELEASE_ROOT/webos/verify-release.js"
+  ares-package "$ITV_RELEASE_ROOT/webos/app" "$ITV_RELEASE_ROOT/webos/service" -o "$ITV_RELEASE_ROOT/release/webos"
+  ares-package --info "$ITV_WEBOS_OUTPUT"
+  cp "$ITV_RELEASE_ROOT/webos/package.json" "$ITV_RELEASE_ROOT/release/webos/version-${ITV_WEBOS_VERSION}.json"
+  echo "webOS package: $ITV_WEBOS_OUTPUT"
+  exit 0
+fi
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=env.sh
 source "$SCRIPT_DIR/env.sh"

@@ -1,0 +1,8 @@
+{
+  "name": "app.itv.webos.service",
+  "version": "0.44.0",
+  "main": "service.js",
+  "dependencies": {
+    "webos-service": "*"
+  }
+}

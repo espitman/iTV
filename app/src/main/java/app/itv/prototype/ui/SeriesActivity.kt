@@ -4,8 +4,10 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -24,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -52,6 +55,9 @@ class SeriesActivity : Activity() {
     private lateinit var creditSection: View
     private lateinit var creditScroller: RtlShelfScrollView
     private lateinit var creditRows: LinearLayout
+    private lateinit var skeleton: View
+    private lateinit var creditSkeleton: LinearLayout
+    private var loaded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,6 +79,10 @@ class SeriesActivity : Activity() {
         creditScroller = findViewById(R.id.movieCredits)
         creditRows = findViewById(R.id.creditRows)
         creditScroller.disableSelfFocus()
+        skeleton = findViewById(R.id.seriesSkeleton)
+        creditSkeleton = findViewById(R.id.creditSkeleton)
+        buildSeriesSkeleton()
+        buildCreditSkeleton()
         play.bindFocusTint()
         play.ensureFocusId()
         play.nextFocusUpId = View.NO_ID
@@ -102,10 +112,16 @@ class SeriesActivity : Activity() {
     override fun onStart() {
         super.onStart()
         observeJob?.cancel()
+        setSkeletonVisible(!loaded)
         observeJob = scope.launch {
-            ItvApplication.instance.repository.observeSeries(seriesId).collect { series ->
-                if (series == null) finish() else bind(series)
-            }
+            ItvApplication.instance.repository.observeSeries(seriesId)
+                .catch {
+                    loaded = true
+                    setSkeletonVisible(false)
+                }
+                .collect { series ->
+                    if (series == null) finish() else bind(series)
+                }
         }
     }
 
@@ -120,6 +136,8 @@ class SeriesActivity : Activity() {
     }
 
     private fun bind(series: LibrarySeries) {
+        loaded = true
+        skeleton.visibility = View.GONE
         rememberSeriesFocus()
         title.text = series.title
         kind.text = if (series.isMovie) getString(R.string.hero_kind_movie) else ""
@@ -185,6 +203,7 @@ class SeriesActivity : Activity() {
         creditsFor = null
         focusedCreditIndex = null
         creditRows.removeAllViews()
+        hideCreditSkeleton()
         setCreditSectionVisible(false)
     }
 
@@ -194,7 +213,7 @@ class SeriesActivity : Activity() {
         focusedCreditIndex = null
         creditJob?.cancel()
         creditRows.removeAllViews()
-        setCreditSectionVisible(false)
+        showCreditSkeleton()
         creditJob = scope.launch {
             val people = withContext(Dispatchers.IO) {
                 runCatching { ItvApplication.instance.telewebion.loadMovieCredits(contentId) }
@@ -206,6 +225,7 @@ class SeriesActivity : Activity() {
     }
 
     private fun showMovieCredits(people: List<MovieCreditPerson>) {
+        hideCreditSkeleton()
         creditRows.removeAllViews()
         if (people.isEmpty()) {
             setCreditSectionVisible(false)
@@ -241,7 +261,7 @@ class SeriesActivity : Activity() {
                 }
             }
             creditRows.addView(card)
-            Pictures.load(person.imageUrl, portrait, R.drawable.ic_credit_fallback)
+            CoverSkeleton.load(person.imageUrl, portrait, R.drawable.ic_credit_fallback, radiusDp = 42f)
             card
         }
         setCreditSectionVisible(true)
@@ -252,6 +272,40 @@ class SeriesActivity : Activity() {
         val visibility = if (visible) View.VISIBLE else View.GONE
         creditSection.visibility = visibility
         creditScroller.visibility = visibility
+    }
+
+    private fun showCreditSkeleton() {
+        creditSkeleton.visibility = View.VISIBLE
+        creditScroller.visibility = View.GONE
+        creditSection.visibility = View.VISIBLE
+    }
+
+    private fun hideCreditSkeleton() {
+        creditSkeleton.visibility = View.GONE
+    }
+
+    private fun buildCreditSkeleton() {
+        creditSkeleton.removeAllViews()
+        val density = resources.displayMetrics.density
+        fun px(value: Float) = (value * density).toInt()
+        val portrait = resources.getDimensionPixelSize(R.dimen.credit_portrait)
+        repeat(SKELETON_CREDITS) { index ->
+            val cell = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutDirection = View.LAYOUT_DIRECTION_RTL
+                gravity = Gravity.CENTER_HORIZONTAL
+                clipChildren = false
+            }
+            cell.addView(SkeletonViews.block(this, portrait, portrait, 42f))
+            cell.addView(SkeletonViews.block(this, px(58f), px(10f), 3f, px(8f)))
+            cell.addView(SkeletonViews.block(this, px(38f), px(8f), 3f, px(4f)))
+            val params = LinearLayout.LayoutParams(
+                resources.getDimensionPixelSize(R.dimen.credit_card_w),
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+            if (index > 0) params.marginStart = resources.getDimensionPixelSize(R.dimen.credit_gap)
+            creditSkeleton.addView(cell, params)
+        }
     }
 
     private fun wireCreditFocus(cards: List<View>) {
@@ -394,7 +448,7 @@ class SeriesActivity : Activity() {
                 true
             }
             episodes.addView(card)
-            Pictures.load(episode.imageUrl, thumb, R.drawable.bg_poster)
+            CoverSkeleton.load(episode.imageUrl, thumb, R.drawable.bg_poster)
             card
         }
     }
@@ -482,7 +536,122 @@ class SeriesActivity : Activity() {
         )
     }
 
+    private fun setSkeletonVisible(visible: Boolean) {
+        skeleton.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * Static shimmer placeholder mirroring the hero art, the copy column and
+     * the episode row. Built once; shown only until the first series emission
+     * (or error) and never rebuilt, so focus and scrolling stay untouched.
+     */
+    private fun buildSeriesSkeleton() {
+        val host = skeleton as FrameLayout
+        host.removeAllViews()
+        val density = resources.displayMetrics.density
+        fun px(value: Float) = (value * density).toInt()
+        fun dim(id: Int) = resources.getDimensionPixelSize(id)
+
+        val copy = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            gravity = Gravity.RIGHT
+            clipChildren = false
+            setPadding(px(24f), 0, dim(R.dimen.series_pad_end), 0)
+        }
+        copy.addView(SkeletonViews.block(this, px(240f), px(36f), 6f))
+        copy.addView(SkeletonViews.block(this, px(120f), px(14f), 4f, px(8f)))
+        copy.addView(
+            SkeletonViews.block(
+                this,
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                px(12f),
+                3f,
+                px(12f),
+            ),
+        )
+        copy.addView(
+            SkeletonViews.block(
+                this,
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                px(12f),
+                3f,
+                px(6f),
+            ),
+        )
+        copy.addView(SkeletonViews.block(this, px(160f), px(12f), 3f, px(6f)))
+        copy.addView(
+            SkeletonViews.block(this, px(140f), dim(R.dimen.series_play_h), 6f, px(16f)),
+        )
+        host.addView(
+            copy,
+            FrameLayout.LayoutParams(
+                dim(R.dimen.series_copy_w),
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP or Gravity.RIGHT,
+            ).apply { topMargin = dim(R.dimen.series_copy_top) },
+        )
+
+        val bottom = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            clipChildren = false
+            setPadding(
+                dim(R.dimen.series_pad_start),
+                0,
+                dim(R.dimen.series_pad_end),
+                dim(R.dimen.series_episode_bottom),
+            )
+        }
+        bottom.addView(SkeletonViews.row(this, 4, px(70f), dim(R.dimen.series_chip_h), px(8f), 14f))
+
+        val episodes = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            clipChildren = false
+        }
+        repeat(SKELETON_EPISODES) { index ->
+            val cell = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutDirection = View.LAYOUT_DIRECTION_RTL
+                clipChildren = false
+            }
+            cell.addView(
+                SkeletonViews.block(
+                    this,
+                    dim(R.dimen.series_episode_w),
+                    dim(R.dimen.series_episode_thumb_h),
+                    8f,
+                ),
+            )
+            cell.addView(SkeletonViews.block(this, px(110f), px(12f), 3f, px(6f)))
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+            if (index > 0) params.marginStart = dim(R.dimen.series_episode_gap)
+            episodes.addView(cell, params)
+        }
+        bottom.addView(
+            episodes,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = px(10f) },
+        )
+        host.addView(
+            bottom,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM,
+            ),
+        )
+    }
+
     companion object {
         const val EXTRA_ID = "series_id"
+        private const val SKELETON_EPISODES = 4
+        private const val SKELETON_CREDITS = 5
     }
 }

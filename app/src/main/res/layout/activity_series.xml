@@ -251,7 +251,29 @@
                 android:layoutDirection="rtl"
                 android:orientation="horizontal" />
         </app.itv.prototype.ui.RtlShelfScrollView>
+        <LinearLayout
+            android:id="@+id/creditSkeleton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:clipChildren="false"
+            android:focusable="false"
+            android:importantForAccessibility="noHideDescendants"
+            android:layoutDirection="rtl"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/series_pad_start"
+            android:paddingEnd="@dimen/series_pad_end"
+            android:visibility="gone" />
     </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/seriesSkeleton"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false"
+        android:importantForAccessibility="noHideDescendants"
+        android:layoutDirection="rtl" />
 
     <include layout="@layout/view_screen_logo" />
 </FrameLayout>

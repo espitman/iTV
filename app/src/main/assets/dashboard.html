@@ -18,7 +18,9 @@
     .top-actions{display:flex;align-items:center;gap:12px}.top-actions button{min-height:30px;padding:3px 10px;font-size:11px}
     .pin-box{direction:ltr;justify-content:center;gap:10px}.pin-box input{width:clamp(42px,12vw,58px);height:60px;min-height:60px;padding:4px;letter-spacing:0}#pair-btn{display:block;margin-inline:auto;margin-block-start:14px}
     @media(max-width:800px){.top-actions span{display:none}}
+    dialog{width:min(560px,calc(100% - 32px));max-height:90vh;overflow:auto;background:var(--surface);color:var(--text);border:1px solid #344c57;border-radius:14px;padding:24px}dialog::backdrop{background:#000a}dialog label{margin-top:16px}dialog .row{justify-content:flex-end;margin-top:20px}#edit-poster-preview{width:90px;height:130px;object-fit:cover;border-radius:8px;margin-top:12px}#edit-msg{margin-top:12px}dialog input{direction:ltr}#edit-title{direction:rtl}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+    #message-dialog .row{justify-content:flex-start}#message-ok.danger{background:#b83240;border-color:#d84b59;color:#fff}#message-ok.danger:hover{background:#cf3949}
   </style>
 </head>
 <body>
@@ -72,12 +74,49 @@
       </section>
     </main>
   </div>
+  <dialog id="edit-dialog" aria-labelledby="edit-heading">
+    <form id="edit-form" novalidate>
+      <h2 id="edit-heading">ویرایش فیلم یا سریال</h2>
+      <label for="edit-title">نام نمایشی</label><input id="edit-title" autocomplete="off">
+      <label for="edit-url">لینک صفحهٔ تلوبیون</label><input id="edit-url" type="url" required>
+      <p class="hint">با تغییر لینک، اطلاعات و قسمت‌ها از منبع جدید نوسازی می‌شوند.</p>
+      <label for="edit-poster">لینک پوستر</label><input id="edit-poster" type="url" placeholder="https://…">
+      <p class="hint">لینک تصویر را وارد کنید یا فایل پوستر را از لپ‌تاپ انتخاب کنید.</p>
+      <label for="edit-file">آپلود پوستر روی تلویزیون</label>
+      <input id="edit-file" class="hidden" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
+      <button id="edit-choose-file" type="button">انتخاب تصویر از لپ‌تاپ</button>
+      <p class="hint">JPG، PNG یا WebP، حداکثر ۸ مگابایت. فایل در حافظهٔ خود اپ روی تلویزیون می‌ماند؛ برای نمایش آن نیازی به روشن‌بودن لپ‌تاپ نیست.</p>
+      <p id="edit-file-status" class="hint"></p>
+      <button id="edit-reset-poster" type="button">استفاده از پوستر خودکار</button>
+      <img id="edit-poster-preview" class="hidden" alt="پیش‌نمایش پوستر" referrerpolicy="no-referrer">
+      <label for="edit-backdrop">لینک تصویر هدر</label><input id="edit-backdrop" type="url" placeholder="https://…">
+      <p class="hint">تصویر افقی ۱۶:۹، پیشنهاد ۱۹۲۰×۱۰۸۰. در هوم و صفحهٔ فیلم/سریال نمایش داده می‌شود.</p>
+      <input id="edit-backdrop-file" class="hidden" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
+      <button id="edit-backdrop-choose" type="button">انتخاب هدر از لپ‌تاپ</button>
+      <p id="edit-backdrop-status" class="hint"></p>
+      <button id="edit-backdrop-reset" type="button">استفاده از هدر خودکار</button>
+      <img id="edit-backdrop-preview" class="hidden" alt="پیش‌نمایش هدر" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:8px;margin-top:12px">
+      <p id="edit-msg" role="alert"></p>
+      <div class="row"><button id="edit-cancel" type="button">لغو</button><button id="edit-save" class="primary" type="submit">ذخیره</button></div>
+    </form>
+  </dialog>
+  <dialog id="message-dialog" aria-labelledby="message-heading">
+    <h2 id="message-heading"></h2><p id="message-body"></p>
+    <div class="row"><button id="message-ok" class="primary" type="button">باشه</button><button id="message-cancel" type="button">لغو</button></div>
+  </dialog>
   <script>
     const tokenKey = "itv-token";
     let token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey) || "";
     if (token) localStorage.setItem(tokenKey, token);
     sessionStorage.removeItem(tokenKey);
     let lastUrl = "";
+    let libraryItems = [];
+    let editingId = null;
+    let selectedPoster = "";
+    let selectedPosterPreview = "";
+    let automaticPosterPreview = "";
+    let uploadingPoster = false;
+    let selectedBackdrop = "", selectedBackdropPreview = "", automaticBackdropPreview = "";
 
     const $ = (id) => document.getElementById(id);
     const digits = (value) => String(value ?? "").replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
@@ -149,6 +188,7 @@
 
     async function refreshList() {
       const data = await api("/api/series");
+      libraryItems = data.items || [];
       const rows = $("rows");
       $("library-count").textContent = digits((data.items || []).length);
       $("table-count").textContent = "نمایش " + digits((data.items || []).length) + " عنوان";
@@ -164,7 +204,7 @@
           <td data-label="وضعیت"><span>${escapeHtml(stateLabel(item))}</span></td>
           <td data-label="مدیریت"><div class="actions">
             <button data-act="refresh" data-id="${item.id}" aria-label="نوسازی" title="نوسازی"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 12M4 12l2.3 6A7 7 0 0 0 18 17"/></svg></button>
-            <button data-act="rename" data-id="${item.id}" aria-label="تغییر نام" title="تغییر نام"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 11-11 4 4-11 11-5 1zM13 7l4 4"/></svg></button>
+            <button data-act="edit" data-id="${item.id}" aria-label="ویرایش" title="ویرایش"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 11-11 4 4-11 11-5 1zM13 7l4 4"/></svg></button>
             <button class="danger" data-act="delete" data-id="${item.id}" aria-label="حذف" title="حذف"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 10v8M14 10v8"/></svg></button>
           </div></td>`;
         rows.appendChild(tr);
@@ -212,7 +252,7 @@
         clearAuth();
       } catch (e) {
         if (e.status === 401) clearAuth();
-        else alert(e.message);
+        else await themedMessage("خطا", e.message);
       }
     };
 
@@ -259,16 +299,170 @@
         if (act === "refresh") {
           await api("/api/series/" + id + "/refresh", { method: "POST" });
         } else if (act === "delete") {
-          if (!confirm("حذف این عنوان از کتابخانه؟")) return;
+          if (!await themedMessage("حذف عنوان", "حذف این عنوان از کتابخانه؟", true)) return;
           await api("/api/series/" + id, { method: "DELETE" });
-        } else if (act === "rename") {
-          const name = prompt("نام نمایشی محلی");
-          if (name == null) return;
-          await api("/api/series/" + id, { method: "PATCH", body: JSON.stringify({ localTitle: name }) });
+        } else if (act === "edit") {
+          const item = libraryItems.find(item => String(item.id) === id);
+          if (!item) return;
+          editingId = id;
+          $("edit-heading").textContent = "ویرایش «" + item.title + "»";
+          $("edit-title").value = item.localTitle || "";
+          $("edit-title").placeholder = item.sourceTitle;
+          $("edit-url").value = item.pageUrl;
+          selectedPoster = item.customPosterUrl?.startsWith("itv-poster:") ? item.customPosterUrl : "";
+          selectedPosterPreview = selectedPoster ? item.posterUrl : "";
+          automaticPosterPreview = item.automaticPosterUrl || "";
+          $("edit-poster").value = selectedPoster ? "" : item.customPosterUrl || "";
+          $("edit-file").value = "";
+          $("edit-file-status").textContent = selectedPoster ? "پوستر در حافظهٔ تلویزیون ذخیره شده است." : "";
+          $("edit-msg").textContent = "";
+          selectedBackdrop = item.customBackdropUrl?.startsWith("itv-poster:") ? item.customBackdropUrl : "";
+          selectedBackdropPreview = selectedBackdrop ? item.backdropUrl : "";
+          automaticBackdropPreview = item.automaticBackdropUrl || "";
+          $("edit-backdrop").value = selectedBackdrop ? "" : item.customBackdropUrl || "";
+          $("edit-backdrop-file").value = "";
+          $("edit-backdrop-status").textContent = selectedBackdrop ? "هدر در حافظهٔ تلویزیون ذخیره شده است." : "";
+          updateBackdropPreview();
+          updatePosterPreview();
+          $("edit-dialog").showModal();
+          return;
         }
         await refreshList();
       } catch (e) {
-        alert(e.message);
+        await themedMessage("خطا", e.message);
+      }
+    };
+
+    function themedMessage(title, message, confirmation = false) {
+      return new Promise(resolve => {
+        const dialog = $("message-dialog");
+        $("message-heading").textContent = title;
+        $("message-body").textContent = message;
+        $("message-cancel").classList.toggle("hidden", !confirmation);
+        $("message-ok").textContent = confirmation ? "حذف" : "باشه";
+        $("message-ok").classList.toggle("danger", confirmation);
+        let accepted = false;
+        $("message-ok").onclick = () => { accepted = true; dialog.close(); };
+        $("message-cancel").onclick = () => dialog.close();
+        dialog.addEventListener("close", () => resolve(accepted), {once:true});
+        dialog.showModal();
+        (confirmation ? $("message-cancel") : $("message-ok")).focus();
+      });
+    }
+
+    function updatePosterPreview() {
+      const image = $("edit-poster-preview");
+      const item = libraryItems.find(item => String(item.id) === editingId);
+      const url = $("edit-poster").value.trim() || selectedPosterPreview || automaticPosterPreview;
+      image.classList.toggle("hidden", !url);
+      if (url) image.src = url; else image.removeAttribute("src");
+    }
+    $("edit-poster").oninput = () => {
+      selectedPoster = ""; selectedPosterPreview = "";
+      $("edit-file-status").textContent = "";
+      updatePosterPreview();
+    };
+    $("edit-reset-poster").onclick = () => {
+      selectedPoster = ""; selectedPosterPreview = "";
+      $("edit-poster").value = ""; $("edit-file").value = "";
+      $("edit-file-status").textContent = "پس از ذخیره، پوستر خودکار استفاده می‌شود.";
+      updatePosterPreview();
+    };
+    $("edit-choose-file").onclick = () => $("edit-file").click();
+    $("edit-file").onchange = async () => {
+      const file = $("edit-file").files[0];
+      if (!file) return;
+      if (file.size > 8 * 1024 * 1024) {
+        $("edit-msg").className = "error";
+        $("edit-msg").textContent = "حجم پوستر باید حداکثر ۸ مگابایت باشد.";
+        $("edit-file").value = ""; return;
+      }
+      uploadingPoster = true;
+      setEditBusy(true);
+      $("edit-msg").className = "";
+      $("edit-msg").textContent = "در حال آپلود پوستر…";
+      try {
+        const result = await api("/api/posters", {method:"POST", body:file, headers:{"Content-Type":file.type || "application/octet-stream"}});
+        selectedPoster = result.customPosterUrl; selectedPosterPreview = result.posterUrl;
+        $("edit-poster").value = "";
+        $("edit-file-status").textContent = `«${file.name}» روی تلویزیون آپلود شد؛ برای اعمال، ذخیره را بزنید.`;
+        $("edit-msg").textContent = "";
+        updatePosterPreview();
+      } catch(error) {
+        $("edit-msg").className = "error"; $("edit-msg").textContent = error.message;
+      } finally { uploadingPoster = false; setEditBusy(false); }
+    };
+    function updateBackdropPreview() {
+      const image = $("edit-backdrop-preview");
+      const url = $("edit-backdrop").value.trim() || selectedBackdropPreview || automaticBackdropPreview;
+      image.classList.toggle("hidden", !url);
+      if (url) image.src = url; else image.removeAttribute("src");
+    }
+    $("edit-backdrop").oninput = () => {
+      selectedBackdrop = ""; selectedBackdropPreview = "";
+      $("edit-backdrop-status").textContent = "";
+      updateBackdropPreview();
+    };
+    $("edit-backdrop-reset").onclick = () => {
+      selectedBackdrop = ""; selectedBackdropPreview = "";
+      $("edit-backdrop").value = ""; $("edit-backdrop-file").value = "";
+      $("edit-backdrop-status").textContent = "پس از ذخیره، هدر خودکار استفاده می‌شود.";
+      updateBackdropPreview();
+    };
+    $("edit-backdrop-preview").onerror = () => $("edit-backdrop-preview").classList.add("hidden");
+    $("edit-backdrop-choose").onclick = () => $("edit-backdrop-file").click();
+    $("edit-backdrop-file").onchange = async () => {
+      const file = $("edit-backdrop-file").files[0];
+      if (!file) return;
+      if (file.size > 8 * 1024 * 1024) {
+        $("edit-msg").className = "error";
+        $("edit-msg").textContent = "حجم هدر باید حداکثر ۸ مگابایت باشد.";
+        $("edit-backdrop-file").value = ""; return;
+      }
+      setEditBusy(true);
+      $("edit-msg").className = "";
+      $("edit-msg").textContent = "در حال آپلود هدر…";
+      try {
+        const result = await api("/api/posters", {method:"POST", body:file, headers:{"Content-Type":file.type || "application/octet-stream"}});
+        selectedBackdrop = result.customPosterUrl; selectedBackdropPreview = result.posterUrl;
+        $("edit-backdrop").value = "";
+        $("edit-backdrop-status").textContent = `«${file.name}» روی تلویزیون ذخیره شد؛ برای اعمال، ذخیره را بزنید.`;
+        $("edit-msg").textContent = "";
+        updateBackdropPreview();
+      } catch(error) {
+        $("edit-msg").className = "error"; $("edit-msg").textContent = error.message;
+      } finally { setEditBusy(false); }
+    };
+    function setEditBusy(busy) {
+      ["edit-save", "edit-cancel", "edit-url", "edit-title", "edit-poster", "edit-file", "edit-choose-file", "edit-reset-poster", "edit-backdrop", "edit-backdrop-file", "edit-backdrop-choose", "edit-backdrop-reset"].forEach(id => $(id).disabled = busy);
+    }
+    $("edit-poster-preview").onerror = () => $("edit-poster-preview").classList.add("hidden");
+    $("edit-cancel").onclick = () => $("edit-dialog").close();
+    $("edit-dialog").addEventListener("close", () => {
+      document.querySelector(`button[data-act="edit"][data-id="${editingId}"]`)?.focus();
+    });
+    $("edit-dialog").addEventListener("cancel", event => {
+      if ($("edit-save").disabled) event.preventDefault();
+    });
+    $("edit-form").onsubmit = async event => {
+      event.preventDefault();
+      if ($("edit-save").disabled) return;
+      setEditBusy(true);
+      $("edit-msg").className = "";
+      $("edit-msg").textContent = "در حال ذخیره…";
+      try {
+        await api("/api/series/" + editingId, { method: "PATCH", body: JSON.stringify({
+          localTitle: $("edit-title").value, url: $("edit-url").value.trim(),
+          customPosterUrl: $("edit-poster").value.trim() || selectedPoster,
+          customBackdropUrl: $("edit-backdrop").value.trim() || selectedBackdrop
+        }) });
+        await refreshList();
+        $("edit-dialog").close();
+      } catch (error) {
+        $("edit-msg").className = "error";
+        $("edit-msg").textContent = error.message;
+      } finally {
+        setEditBusy(false);
       }
     };
 

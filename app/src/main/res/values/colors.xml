@@ -10,4 +10,6 @@
     <color name="card">#10171B</color>
     <color name="error">#FF8A80</color>
     <color name="focus_glow">#6620DCE6</color>
+    <color name="skeleton_base">#131C22</color>
+    <color name="skeleton_highlight">#28383F</color>
 </resources>

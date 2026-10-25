@@ -14,6 +14,12 @@ import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.request.header
 import io.ktor.server.request.path
 import io.ktor.server.request.receiveText
+import io.ktor.server.request.receiveChannel
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.io.File
+import java.io.ByteArrayOutputStream
+import java.util.UUID
 import io.ktor.server.response.respondText
 import io.ktor.server.response.respondBytes
 import app.itv.prototype.R
@@ -102,7 +108,9 @@ class LanDashboard(
                 post("/api/preview") { call.authed { handlePreview() } }
                 get("/api/series") { call.authed { handleList() } }
                 post("/api/series") { call.authed { handleAdd() } }
-                patch("/api/series/{id}") { call.authed { handleRename() } }
+                post("/api/posters") { call.authed { handlePosterUpload() } }
+                get("/posters/{name}") { call.handlePosterImage() }
+                patch("/api/series/{id}") { call.authed { handleEdit() } }
                 delete("/api/series/{id}") { call.authed { handleDelete() } }
                 post("/api/series/{id}/refresh") { call.authed { handleRefresh() } }
             }
@@ -214,17 +222,92 @@ class LanDashboard(
                     .put("episodeCount", series.presentEpisodes.size)
                     .put("importState", series.importState.name)
                     .put("importError", series.importError ?: JSONObject.NULL)
-                    .put("posterUrl", series.posterUrl ?: JSONObject.NULL),
+                    .put("posterUrl", browserPosterUrl(series.posterUrl) ?: JSONObject.NULL)
+                    .put("customPosterUrl", repository.customPosterUrl(series.id) ?: JSONObject.NULL)
+                    .put("backdropUrl", browserPosterUrl(series.backdropUrl) ?: JSONObject.NULL)
+                    .put("customBackdropUrl", repository.customBackdropUrl(series.id) ?: JSONObject.NULL)
+                    .put("automaticBackdropUrl", repository.automaticBackdropUrl(series.id) ?: JSONObject.NULL)
+                    .put("automaticPosterUrl", browserPosterUrl(repository.automaticPosterUrl(series.id)) ?: JSONObject.NULL)
+                    .put("pageUrl", "https://telewebion.net/${series.kind.path}/${series.sourceId}"),
             )
         }
         respondJson(JSONObject().put("items", items))
     }
 
-    private suspend fun ApplicationCall.handleRename() {
+    private suspend fun ApplicationCall.handleEdit() {
         val id = parameters["id"]?.toLongOrNull() ?: return fail(HttpStatusCode.BadRequest, "شناسه نامعتبر است")
-        val title = JSONObject(receiveText().ifBlank { "{}" }).optString("localTitle")
-        repository.rename(id, title)
+        val body = JSONObject(receiveText().ifBlank { "{}" })
+        if (!body.has("url")) {
+            repository.rename(id, body.optString("localTitle"))
+        } else {
+            val source = parseUrl(body.optString("url")) ?: return
+            val poster = body.optString("customPosterUrl").trim().ifBlank { null }
+            if (poster != null) {
+                val uri = runCatching { java.net.URI(poster) }.getOrNull()
+                require((poster.startsWith("itv-poster:") && posterFile(poster.removePrefix("itv-poster:"))?.isFile == true) ||
+                    (uri != null && uri.scheme.equals("https", ignoreCase = true) &&
+                    !uri.host.isNullOrBlank() && uri.userInfo == null)) { "لینک پوستر باید نشانی معتبر https باشد" }
+            }
+            val backdrop = if (body.has("customBackdropUrl"))
+                body.optString("customBackdropUrl").trim().ifBlank { null }
+                else repository.customBackdropUrl(id)
+            if (backdrop != null) {
+                val uri = runCatching { java.net.URI(backdrop) }.getOrNull()
+                require((backdrop.startsWith("itv-poster:") && posterFile(backdrop.removePrefix("itv-poster:"))?.isFile == true) ||
+                    (uri != null && uri.scheme.equals("https", ignoreCase = true) &&
+                    !uri.host.isNullOrBlank() && uri.userInfo == null)) { "لینک هدر باید نشانی معتبر https باشد" }
+            }
+            importer.edit(id, source, body.optString("localTitle"), poster, backdrop)
+        }
         respondJson(JSONObject().put("ok", true))
+    }
+
+    private fun browserPosterUrl(url: String?): String? =
+        if (url?.startsWith("itv-poster:") == true) "/posters/${url.removePrefix("itv-poster:")}" else url
+
+    private fun posterFile(name: String): File? {
+        if (!name.matches(Regex("[0-9a-f-]{36}\\.jpg"))) return null
+        return File(File(context.filesDir, "posters"), name)
+    }
+
+    private suspend fun ApplicationCall.handlePosterImage() {
+        if (!sameOrigin()) return
+        val file = posterFile(parameters["name"].orEmpty())
+        if (file?.isFile != true) return fail(HttpStatusCode.NotFound, "پوستر پیدا نشد")
+        respondBytes(file.readBytes(), ContentType.Image.JPEG)
+    }
+
+    private suspend fun ApplicationCall.handlePosterUpload() {
+        val limit = 8 * 1024 * 1024
+        val channel = receiveChannel()
+        val bytes = ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (true) {
+            val count = channel.readAvailable(buffer, 0, buffer.size)
+            if (count == -1) break
+            require(bytes.size() + count <= limit) { "حجم پوستر باید حداکثر ۸ مگابایت باشد" }
+            bytes.write(buffer, 0, count)
+        }
+        val data = bytes.toByteArray()
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(data, 0, data.size, bounds)
+        require(bounds.outWidth > 0 && bounds.outHeight > 0 &&
+            bounds.outWidth.toLong() * bounds.outHeight <= 36_000_000L) { "فایل تصویر معتبر نیست یا ابعاد آن بیش از حد بزرگ است" }
+        val options = BitmapFactory.Options().apply { inSampleSize = 1 }
+        while (maxOf(bounds.outWidth, bounds.outHeight) / options.inSampleSize > 2048) options.inSampleSize *= 2
+        val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size, options) ?: error("فایل تصویر قابل خواندن نیست")
+        val name = "${UUID.randomUUID()}.jpg"
+        val file = requireNotNull(posterFile(name))
+        try {
+            file.parentFile?.mkdirs()
+            file.outputStream().use { require(bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)) { "ذخیرهٔ پوستر ناموفق بود" } }
+        } catch (error: Exception) {
+            file.delete()
+            throw error
+        } finally {
+            bitmap.recycle()
+        }
+        respondJson(JSONObject().put("customPosterUrl", "itv-poster:$name").put("posterUrl", "/posters/$name"))
     }
 
     private suspend fun ApplicationCall.handleDelete() {

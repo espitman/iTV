@@ -7,6 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.ImageButton
@@ -91,6 +93,10 @@ class PlayerActivity : Activity() {
     private lateinit var resumeBody: TextView
     private lateinit var resumePlay: Button
     private lateinit var resumeRestart: Button
+    private lateinit var pausePanel: View
+    private lateinit var pausePoster: ImageView
+    private lateinit var pauseTitle: TextView
+    private lateinit var pauseEpisode: TextView
 
     private var player: ExoPlayer? = null
     private var episode: LibraryEpisode? = null
@@ -100,6 +106,8 @@ class PlayerActivity : Activity() {
     private var controlsVisible = false
     private var quickSeekBurst: SeekBurst? = null
     private var nextCountdown = NextCountdown()
+    private var userPaused = false
+
     private var resumeRemaining = PlaybackRules.RESUME_COUNTDOWN_SEC
     private var lastSaveAt = 0L
     private var loadGeneration = 0L
@@ -167,17 +175,28 @@ class PlayerActivity : Activity() {
         resumeBody = findViewById(R.id.resumeBody)
         resumePlay = findViewById(R.id.resumePlay)
         resumeRestart = findViewById(R.id.resumeRestart)
+        pausePanel = findViewById(R.id.pausePanel)
+        pausePoster = findViewById(R.id.pausePoster)
+        pauseTitle = findViewById(R.id.pauseTitle)
+        pauseEpisode = findViewById(R.id.pauseEpisode)
         playerView.isFocusable = false
         playerView.isFocusableInTouchMode = false
         playerView.descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
-        listOf(btnQuality, retry, btnPlay, btnNext, btnForward, btnRewind, btnRestart, btnSpeed, btnJump, jumpHour, jumpMinute, jumpSecond, jumpGo, skip, nextPlay, nextCancel, resumePlay, resumeRestart)
+        listOf(btnQuality, retry, btnPlay, btnNext, btnForward, btnRewind, btnRestart, btnSpeed, btnJump, jumpHour, jumpMinute, jumpSecond, jumpGo, nextPlay, nextCancel, resumePlay, resumeRestart)
             .forEach { it.bindFocusTint() }
+        skip.isFocusable = true
+        skip.isFocusableInTouchMode = true
+        skip.bindFocusTint()
+        nextPlay.nextFocusLeftId = nextCancel.id
+        nextPlay.nextFocusRightId = nextCancel.id
+        nextCancel.nextFocusLeftId = nextPlay.id
+        nextCancel.nextFocusRightId = nextPlay.id
         retry.setOnClickListener { episode?.let { loadEpisode(it.id) } }
         btnPlay.setOnClickListener { togglePlay() }
         btnNext.setOnClickListener { nextEpisode?.let { loadEpisode(it.id) } }
         btnForward.setOnClickListener { seekBy(PlaybackRules.MEDIA_FORWARD_MS) }
         btnRewind.setOnClickListener { seekBy(-PlaybackRules.MEDIA_REWIND_MS) }
-        btnRestart.setOnClickListener { player?.seekTo(0); showControls() }
+        btnRestart.setOnClickListener { suppressPausePanel(); player?.seekTo(0); showControls() }
         btnSpeed.setOnClickListener { toggleSpeed() }
         btnJump.setOnClickListener { toggleJump() }
         jumpHour.setOnClickListener { jumpH = (jumpH + 1) % 10; refreshJumpLabels() }
@@ -194,6 +213,7 @@ class PlayerActivity : Activity() {
         timeline.setKeyTimeIncrement(10_000L)
         timeline.addListener(object : TimeBar.OnScrubListener {
             override fun onScrubStart(timeBar: TimeBar, position: Long) {
+                suppressPausePanel()
                 scrubbing = true
                 resumeAfterScrub = player?.playWhenReady == true
                 player?.pause()
@@ -291,12 +311,13 @@ class PlayerActivity : Activity() {
                 btnQuality.contentDescription = "کیفیت پخش" + (height?.let { "؛ ${persianDigits(it)}p" } ?: "")
             }
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_BUFFERING && !ready && resume.visibility != View.VISIBLE) showOverlay(loading = true, error = null)
+                updatePausePanel()
+                if (state == Player.STATE_BUFFERING && !ready && !panelShown(resume)) showOverlay(loading = true, error = null)
                 if (state == Player.STATE_READY) {
                     val firstReady = !ready
                     ready = true
                     showOverlay(loading = false, error = null)
-                    if (firstReady && resume.visibility != View.VISIBLE) showControls()
+                    if (firstReady && !panelShown(resume)) showControls()
                 }
                 if (state == Player.STATE_ENDED) {
                     persistProgress()
@@ -311,6 +332,7 @@ class PlayerActivity : Activity() {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 btnPlay.contentDescription = getString(if (isPlaying) R.string.pause else R.string.play)
                 btnPlay.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+                updatePausePanel()
                 scheduleHide()
             }
 
@@ -346,6 +368,10 @@ class PlayerActivity : Activity() {
         btnNext.visibility = if (currentSeries?.isMovie == true) View.GONE else View.VISIBLE
         btnForward.nextFocusRightId = if (currentSeries?.isMovie == true) btnQuality.id else btnNext.id
         btnQuality.nextFocusLeftId = if (currentSeries?.isMovie == true) btnForward.id else btnNext.id
+        pauseTitle.text = currentSeries?.title ?: item.title
+        pauseEpisode.text = if (currentSeries?.isMovie == true) "فیلم سینمایی" else nowMeta.text
+        app.itv.prototype.Pictures.load(currentSeries?.posterUrl ?: item.imageUrl, pausePoster, R.drawable.bg_poster)
+        pausePoster.clipRound(8f)
         nextTitle.text = nextEpisode?.label().orEmpty()
         app.itv.prototype.Pictures.load(nextEpisode?.imageUrl, findViewById(R.id.nextImage), R.drawable.bg_poster)
     }
@@ -353,8 +379,8 @@ class PlayerActivity : Activity() {
     private fun showResume(item: LibraryEpisode) {
         showOverlay(loading = false, error = null)
         app.itv.prototype.Pictures.load(series?.backdropUrl ?: item.imageUrl, resumeBackdrop, R.drawable.bg_cinema)
-        resume.visibility = View.VISIBLE
-        controls.visibility = View.GONE
+        animatePanel(resume, true)
+        animatePanel(controls, false)
         resumeRemaining = PlaybackRules.RESUME_COUNTDOWN_SEC
         resumeTitle.text = getString(R.string.resume_title, item.label())
         resumeBody.text = getString(R.string.resume_body, persianClock(item.lastPositionMs))
@@ -366,7 +392,7 @@ class PlayerActivity : Activity() {
 
     private val resumeTick = object : Runnable {
         override fun run() {
-            if (resume.visibility != View.VISIBLE) return
+            if (!panelShown(resume)) return
             if (!ready) { handler.postDelayed(this, 1000); return }
             resumeRemaining -= 1
             if (resumeRemaining <= 0) {
@@ -384,7 +410,7 @@ class PlayerActivity : Activity() {
 
     private fun startFromResume(fromStart: Boolean) {
         handler.removeCallbacks(resumeTick)
-        resume.visibility = View.GONE
+        animatePanel(resume, false)
         player?.let {
             if (fromStart) it.seekTo(0)
             it.playWhenReady = true
@@ -414,19 +440,21 @@ class PlayerActivity : Activity() {
     }
 
     private fun updateSkip(pos: Long, dur: Long) {
-        if (resume.visibility == View.VISIBLE) {
-            skip.visibility = View.GONE
+        if (panelShown(resume)) {
+            animatePanel(skip, false)
             return
         }
         val intro = PlaybackRules.skipIntroActive(pos, firstTitrajeStart, firstTitrajeEnd)
         val outro = PlaybackRules.skipOutroActive(pos, lastTitrajeStart, dur)
         val locked = nextLocked(dur, pos)
-        if ((intro || outro) && !locked && !controlsVisible) {
-            skip.visibility = View.VISIBLE
+        val wasShown = panelShown(skip)
+        val show = (intro || outro) && !locked && !controlsVisible && !userPaused
+        animatePanel(skip, show)
+        if (show) {
             skip.text = getString(if (intro) R.string.skip_intro else R.string.skip_outro)
-            if (!skip.hasFocus()) skip.requestFocus()
-        } else {
-            skip.visibility = View.GONE
+            if (!wasShown && !isNextCardFocus()) skip.requestFocus()
+        } else if (skip.hasFocus()) {
+            root.requestFocus()
         }
     }
 
@@ -434,12 +462,18 @@ class PlayerActivity : Activity() {
         PlaybackRules.nextLockActive(nextEpisode != null, nextCountdown.cancelled, duration, position)
 
     private fun updateNextCard() {
+        if (userPaused || scrubbing) {
+            if (nextCard.hasFocus()) root.requestFocus()
+            animatePanel(nextCard, false)
+            stopNextTicker()
+            return
+        }
         val exo = player ?: return
         val dur = exo.duration
         val pos = exo.currentPosition
         val next = nextEpisode
         if (next == null || nextCountdown.cancelled || dur <= 0) {
-            nextCard.visibility = View.GONE
+            animatePanel(nextCard, false)
             stopNextTicker()
             return
         }
@@ -448,14 +482,17 @@ class PlayerActivity : Activity() {
         val near = remain < PlaybackRules.NEXT_CARD_MS
         val previous = nextCountdown
         nextCountdown = nextCountdown.onWindow(locked)
-        if (nextCountdown.started && !previous.started) {
+        val enteredLock = nextCountdown.started && !previous.started
+        if (enteredLock) {
             startNextTicker()
         } else if (!nextCountdown.started) {
             stopNextTicker()
         }
-        nextCard.visibility = if (locked || near) View.VISIBLE else View.GONE
+        animatePanel(nextCard, locked || near)
         if (locked) {
-            if (!isNextCardFocus()) nextPlay.requestFocus()
+            // Take focus once, when the lock window opens, and only if the viewer has
+            // not already chosen another target. Never re-grab it on later ticks.
+            if (enteredLock) nextPlay.requestFocus()
             nextLabel.text = getString(R.string.next_countdown, persianDigits(nextCountdown.remainingSec))
             if (nextCountdown.shouldAutoPlay) loadEpisode(next.id)
         } else {
@@ -475,6 +512,10 @@ class PlayerActivity : Activity() {
     private val nextTicker = object : Runnable {
         override fun run() {
             if (!nextCountdown.started || nextCountdown.cancelled) return
+            if (player?.playWhenReady != true || scrubbing) {
+                handler.postDelayed(this, 1000L)
+                return
+            }
             nextCountdown = nextCountdown.tick()
             updateNextCard()
             if (nextCountdown.started && !nextCountdown.shouldAutoPlay && !nextCountdown.cancelled) {
@@ -487,9 +528,11 @@ class PlayerActivity : Activity() {
         stopNextTicker()
         nextCountdown = nextCountdown.cancel()
         updateNextCard()
+        if (controlsVisible) btnPlay.requestFocus() else root.requestFocus()
     }
 
     private fun skipCredits() {
+        suppressPausePanel()
         val exo = player ?: return
         val pos = exo.currentPosition
         if (PlaybackRules.skipIntroActive(pos, firstTitrajeStart, firstTitrajeEnd)) {
@@ -501,11 +544,40 @@ class PlayerActivity : Activity() {
 
     private fun togglePlay() {
         val exo = player ?: return
-        if (exo.isPlaying) exo.pause() else exo.play()
+        setUserPaused(exo.playWhenReady)
         showControls()
     }
 
+    private fun setUserPaused(paused: Boolean) {
+        val exo = player ?: return
+        userPaused = paused
+        if (paused) exo.pause() else exo.play()
+        updatePausePanel()
+        if (paused) {
+            stopNextTicker()
+            if (nextCard.hasFocus() || skip.hasFocus()) root.requestFocus()
+            animatePanel(nextCard, false)
+            animatePanel(skip, false)
+        } else {
+            if (nextCountdown.started && !nextCountdown.cancelled) startNextTicker()
+            updateNextCard()
+        }
+    }
+
+    private fun suppressPausePanel() {
+        userPaused = false
+        animatePanel(pausePanel, false)
+    }
+
+    private fun updatePausePanel() {
+        val exo = player
+        animatePanel(pausePanel, userPaused && ready && exo?.playWhenReady == false &&
+            exo.playbackState == Player.STATE_READY && !scrubbing &&
+            !panelShown(overlay) && !panelShown(resume))
+    }
+
     private fun seekBy(delta: Long, revealControls: Boolean = controlsVisible) {
+        suppressPausePanel()
         val exo = player ?: return
         if (!exo.isCurrentMediaItemSeekable) return
         val upperBound = exo.duration.takeIf { it > 0L } ?: Long.MAX_VALUE
@@ -515,6 +587,7 @@ class PlayerActivity : Activity() {
     }
 
     private fun quickSeek(event: KeyEvent, delta: Long) {
+        suppressPausePanel()
         val exo = player ?: return
         if (!exo.isCurrentMediaItemSeekable) return
         val previous = quickSeekBurst?.takeIf { it.continues(event.keyCode, event.eventTime) }
@@ -528,25 +601,63 @@ class PlayerActivity : Activity() {
     private fun showSeekFeedback(delta: Long) {
         val showing = if (delta > 0L) seekRightFeedback else seekLeftFeedback
         val other = if (delta > 0L) seekLeftFeedback else seekRightFeedback
-        other.visibility = View.GONE
+        animatePanel(other, false)
         showing.text = (if (delta > 0L) "+" else "−") + persianDigits(kotlin.math.abs(delta) / 1000L)
-        showing.visibility = View.VISIBLE
+        animatePanel(showing, true)
         handler.removeCallbacks(hideSeekFeedback)
         handler.postDelayed(hideSeekFeedback, 1_500L)
     }
 
     private val hideSeekFeedback = Runnable {
-        seekLeftFeedback.visibility = View.GONE
-        seekRightFeedback.visibility = View.GONE
+        animatePanel(seekLeftFeedback, false)
+        animatePanel(seekRightFeedback, false)
         quickSeekBurst = null
     }
 
+    // Keep navigation state immediate while the outgoing pixels finish fading.
+    private val panelTargets = mutableMapOf<View, Boolean>()
+    private val panelOrigins = mutableMapOf<View, Float>()
+    private val panelFocusModes = mutableMapOf<ViewGroup, Int>()
+    private val panelFocusable = mutableMapOf<View, Boolean>()
+
+    private fun panelShown(view: View) = panelTargets[view] ?: (view.visibility == View.VISIBLE)
+
+    private fun animatePanel(view: View, show: Boolean) {
+        if (panelShown(view) == show) return
+        panelTargets[view] = show
+        val origin = panelOrigins.getOrPut(view) { view.translationY }
+        val offset = 12f * resources.displayMetrics.density
+        view.animate().cancel()
+        val focusable = panelFocusable.getOrPut(view) { view.isFocusable }
+        view.isFocusable = show && focusable
+        if (view is ViewGroup) {
+            val focusMode = panelFocusModes.getOrPut(view) { view.descendantFocusability }
+            view.descendantFocusability = if (show) focusMode else ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        }
+        if (!show && view.hasFocus()) root.requestFocus()
+        if (show && view.visibility != View.VISIBLE) {
+            view.alpha = 0f
+            view.translationY = origin + offset
+            view.visibility = View.VISIBLE
+        }
+        view.animate().alpha(if (show) 1f else 0f)
+            .translationY(if (show) origin else origin + offset)
+            .setDuration(if (show) 180L else 140L)
+            .setInterpolator(DecelerateInterpolator())
+            .withEndAction {
+                if (!panelShown(view)) view.visibility = View.GONE
+                view.translationY = origin
+            }.start()
+    }
+
     private fun showControls() {
-        if (resume.visibility == View.VISIBLE) return
+        if (panelShown(resume)) return
         quickSeekBurst = null
+        if (skip.hasFocus()) root.requestFocus()
+        animatePanel(skip, false)
         controlsVisible = true
-        controls.visibility = View.VISIBLE
-        if (!speedOpen() && !jumpOpen() && nextCard.visibility != View.VISIBLE && !isControlFocus()) {
+        animatePanel(controls, true)
+        if (!speedOpen() && !jumpOpen() && !panelShown(nextCard) && !isControlFocus()) {
             btnPlay.post { if (!isControlFocus()) btnPlay.requestFocus() }
         }
         scheduleHide()
@@ -556,7 +667,7 @@ class PlayerActivity : Activity() {
         if (speedOpen() || jumpOpen() || scrubbing || qualityDialog?.isShowing == true) return
         if (controls.hasFocus()) root.requestFocus()
         controlsVisible = false
-        controls.visibility = View.GONE
+        animatePanel(controls, false)
     }
 
     private fun scheduleHide() {
@@ -608,13 +719,13 @@ class PlayerActivity : Activity() {
     }
 
     private fun toggleSpeed() {
-        speedPanel.visibility = if (speedOpen()) View.GONE else View.VISIBLE
+        animatePanel(speedPanel, !speedOpen())
         if (speedOpen()) speedPanel.getChildAt(0)?.requestFocus()
         scheduleHide()
     }
 
     private fun toggleJump() {
-        jumpPanel.visibility = if (jumpOpen()) View.GONE else View.VISIBLE
+        animatePanel(jumpPanel, !jumpOpen())
         if (jumpOpen()) {
             val pos = ((player?.currentPosition ?: 0L) / 1000L).toInt()
             jumpH = pos / 3600
@@ -636,7 +747,7 @@ class PlayerActivity : Activity() {
             button.bindFocusTint()
             button.setOnClickListener {
                 player?.setPlaybackSpeed(speed)
-                speedPanel.visibility = View.GONE
+                animatePanel(speedPanel, false)
                 showControls()
             }
             speedPanel.addView(button)
@@ -650,21 +761,24 @@ class PlayerActivity : Activity() {
     }
 
     private fun applyJump() {
+        suppressPausePanel()
         player?.seekTo(((jumpH * 3600L) + (jumpM * 60L) + jumpS) * 1000L)
-        jumpPanel.visibility = View.GONE
+        animatePanel(jumpPanel, false)
         showControls()
     }
 
-    private fun speedOpen() = speedPanel.visibility == View.VISIBLE
-    private fun jumpOpen() = jumpPanel.visibility == View.VISIBLE
+    private fun speedOpen() = panelShown(speedPanel)
+    private fun jumpOpen() = panelShown(jumpPanel)
 
     private fun hidePanels() {
-        speedPanel.visibility = View.GONE
-        jumpPanel.visibility = View.GONE
-        nextCard.visibility = View.GONE
-        skip.visibility = View.GONE
-        resume.visibility = View.GONE
-        controls.visibility = View.GONE
+        animatePanel(speedPanel, false)
+        animatePanel(jumpPanel, false)
+        animatePanel(nextCard, false)
+        animatePanel(skip, false)
+        animatePanel(resume, false)
+        animatePanel(controls, false)
+        animatePanel(pausePanel, false)
+        userPaused = false
         controlsVisible = false
         quickSeekBurst = null
         handler.removeCallbacks(hideSeekFeedback)
@@ -675,19 +789,41 @@ class PlayerActivity : Activity() {
         if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_BACK) {
             return handleBack()
         }
-        if (event.keyCode in listOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN) &&
-            ready && overlay.visibility != View.VISIBLE && !controlsVisible && !speedOpen() && !jumpOpen()) {
-            player?.let { updateSkip(it.currentPosition, it.duration) }
-            if (skip.isShown) {
-                if (event.action == KeyEvent.ACTION_DOWN && !skip.hasFocus()) skip.requestFocus()
+        val direction = event.keyCode in listOf(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN)
+        if (ready && !panelShown(overlay) && !panelShown(resume)) {
+            if (direction && panelShown(nextCard) && (isNextCardFocus() ||
+                    (event.keyCode == KeyEvent.KEYCODE_DPAD_UP && controlsVisible) ||
+                    nextLocked(player?.duration ?: 0L, player?.currentPosition ?: 0L))) {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    if (!isNextCardFocus()) nextPlay.requestFocus()
+                    else when (event.keyCode) {
+                        KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT ->
+                            (if (currentFocus === nextPlay) nextCancel else nextPlay).requestFocus()
+                        KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (!nextLocked(player?.duration ?: 0L, player?.currentPosition ?: 0L)) {
+                                showControls()
+                                btnPlay.requestFocus()
+                            }
+                        }
+                    }
+                }
+                return true
+            }
+            if (direction && !controlsVisible && !speedOpen() && !jumpOpen() &&
+                event.keyCode in listOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN)) {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && panelShown(nextCard)) nextPlay.requestFocus()
+                    else showControls()
+                }
                 return true
             }
         }
         val horizontalKey = event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
         val mediaSeekKey = event.keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || event.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD
-        val canQuickSeek = ready && overlay.visibility != View.VISIBLE && resume.visibility != View.VISIBLE &&
+        val canQuickSeek = ready && !panelShown(overlay) && !panelShown(resume) &&
             !controlsVisible && !speedOpen() && !jumpOpen() &&
-            (!horizontalKey || !(nextCard.visibility == View.VISIBLE && nextLocked(player?.duration ?: 0L, player?.currentPosition ?: 0L)))
+            (!horizontalKey || !(panelShown(nextCard) && nextLocked(player?.duration ?: 0L, player?.currentPosition ?: 0L)))
         if ((horizontalKey || mediaSeekKey) && canQuickSeek) {
             if (event.action == KeyEvent.ACTION_DOWN) {
                 val step = if (horizontalKey) PlaybackRules.dpadSeekStep(event.eventTime - event.downTime) else PlaybackRules.MEDIA_FORWARD_MS
@@ -699,13 +835,13 @@ class PlayerActivity : Activity() {
         if (timeline.isFocused && controlsVisible && event.keyCode in listOf(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER)) {
             return super.dispatchKeyEvent(event)
         }
-        if (event.action == KeyEvent.ACTION_DOWN && ready && overlay.visibility != View.VISIBLE && resume.visibility != View.VISIBLE) {
-            val locked = nextCard.visibility == View.VISIBLE &&
+        if (event.action == KeyEvent.ACTION_DOWN && ready && !panelShown(overlay) && !panelShown(resume)) {
+            val locked = panelShown(nextCard) &&
                 nextLocked(player?.duration ?: 0L, player?.currentPosition ?: 0L)
             when (event.keyCode) {
                 KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                    if (locked) {
-                        if (!isNextCardFocus()) nextPlay.requestFocus()
+                    if (locked && !isNextCardFocus()) {
+                        nextPlay.requestFocus()
                         return super.dispatchKeyEvent(event)
                     }
                     if (isFocusedClickable()) return super.dispatchKeyEvent(event)
@@ -716,17 +852,9 @@ class PlayerActivity : Activity() {
                     togglePlay()
                     return true
                 }
-                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                    if (isFocusedClickable()) return super.dispatchKeyEvent(event)
-                    if (!controlsVisible) {
-                        showControls()
-                        return true
-                    }
-                    togglePlay()
-                    return true
-                }
-                KeyEvent.KEYCODE_MEDIA_PLAY -> { player?.play(); return true }
-                KeyEvent.KEYCODE_MEDIA_PAUSE -> { player?.pause(); return true }
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> { togglePlay(); return true }
+                KeyEvent.KEYCODE_MEDIA_PLAY -> { setUserPaused(false); return true }
+                KeyEvent.KEYCODE_MEDIA_PAUSE -> { setUserPaused(true); showControls(); return true }
                 KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT,
                 KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> {
                     if (locked) return dispatchLockedNavigation(event)
@@ -785,9 +913,10 @@ class PlayerActivity : Activity() {
     private fun handleBack(): Boolean {
         when {
             scrubbing -> { timeline.isEnabled = false; timeline.isEnabled = true; return true }
-            resume.visibility == View.VISIBLE -> { startFromResume(false); return true }
-            jumpOpen() -> { jumpPanel.visibility = View.GONE; return true }
-            speedOpen() -> { speedPanel.visibility = View.GONE; return true }
+            panelShown(resume) -> { startFromResume(false); return true }
+            jumpOpen() -> { animatePanel(jumpPanel, false); return true }
+            speedOpen() -> { animatePanel(speedPanel, false); return true }
+            isNextCardFocus() -> { cancelNextCountdown(); return true }
             controlsVisible -> { hideControls(); return true }
             else -> { persistProgress(flush = true); finish(); return true }
         }
@@ -806,7 +935,8 @@ class PlayerActivity : Activity() {
 
     private fun showOverlay(loading: Boolean, error: String?) {
         val visible = loading || error != null
-        overlay.visibility = if (visible) View.VISIBLE else View.GONE
+        if (visible) animatePanel(pausePanel, false)
+        animatePanel(overlay, visible)
         spinner.visibility = if (loading) View.VISIBLE else View.GONE
         retry.visibility = if (error != null) View.VISIBLE else View.GONE
         if (error != null) {
@@ -826,6 +956,7 @@ class PlayerActivity : Activity() {
     }
 
     override fun onPause() {
+        suppressPausePanel()
         persistProgress(flush = true)
         super.onPause()
     }

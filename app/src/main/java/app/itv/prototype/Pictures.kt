@@ -20,15 +20,17 @@ object Pictures {
     private val worker = Executors.newFixedThreadPool(3)
     private val main = Handler(Looper.getMainLooper())
     private var diskDir: File? = null
+    private var posterDir: File? = null
 
     fun install(context: Context) {
         diskDir = File(context.cacheDir, "pictures").also { it.mkdirs() }
+        posterDir = File(context.filesDir, "posters").also { it.mkdirs() }
     }
 
     fun episodeUrl(image: String?): String? {
         val id = image?.trim().orEmpty()
         if (id.isEmpty() || id == "null") return null
-        if (id.startsWith("http")) return id
+        if (id.startsWith("http") || id.startsWith("itv-poster:")) return id
         return "https://static.telewebion.net/episodeImages/$id/default"
     }
 
@@ -95,6 +97,12 @@ object Pictures {
     }
 
     private fun read(url: String): Bitmap {
+        if (url.startsWith("itv-poster:")) {
+            val name = url.removePrefix("itv-poster:")
+            require(name.matches(Regex("[0-9a-f-]{36}\\.jpg")))
+            return BitmapFactory.decodeFile(File(requireNotNull(posterDir), name).absolutePath)
+                ?: error("پوستر ذخیره‌شده قابل خواندن نیست")
+        }
         val file = diskDir?.let { File(it, url.hashCode().toUInt().toString()) }
         if (file != null && file.exists()) {
             BitmapFactory.decodeFile(file.absolutePath)?.let { return it }

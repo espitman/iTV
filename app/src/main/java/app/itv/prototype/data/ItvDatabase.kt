@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [SeriesEntity::class, SeasonEntity::class, EpisodeEntity::class],
-    version = 2,
+    version = 4,
     exportSchema = false,
 )
 abstract class ItvDatabase : RoomDatabase() {
@@ -25,6 +25,14 @@ abstract class ItvDatabase : RoomDatabase() {
                         db.execSQL("ALTER TABLE series ADD COLUMN isMovie INTEGER NOT NULL DEFAULT 0")
                         db.execSQL("ALTER TABLE series ADD COLUMN durationMinutes INTEGER NOT NULL DEFAULT 0")
                         db.execSQL("ALTER TABLE series ADD COLUMN backdropUrl TEXT")
+                    }
+                }, object : Migration(2, 3) {
+                    override fun migrate(db: SupportSQLiteDatabase) {
+                        db.execSQL("ALTER TABLE series ADD COLUMN customPosterUrl TEXT")
+                    }
+                }, object : Migration(3, 4) {
+                    override fun migrate(db: SupportSQLiteDatabase) {
+                        db.execSQL("ALTER TABLE series ADD COLUMN customBackdropUrl TEXT")
                     }
                 })
                 .build()

@@ -3,4 +3,8 @@
     <declare-styleable name="ItvLogoView">
         <attr name="logoSize" format="dimension" />
     </declare-styleable>
+
+    <declare-styleable name="SkeletonBlockView">
+        <attr name="skeletonRadius" format="dimension" />
+    </declare-styleable>
 </resources>
