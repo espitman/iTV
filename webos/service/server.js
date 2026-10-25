@@ -6,6 +6,10 @@ const http = require("http"),
   os = require("os");
 const webdav = require("./webdav");
 const filimo = require("./filimo");
+const filmnet = require("./filmnet");
+const sheyda = require("./sheyda");
+const metadataProviders = {filimo,filmnet,sheyda};
+const importSource = require("./import-source");
 const catalog = require("./catalog"),
   rules = require("./rules");
 function createServer({
@@ -65,8 +69,9 @@ function createServer({
     active++;
     s.importState = "RUNNING";
     try {
-      if (s.metadataProvider === "filimo") {
-        Object.assign(s,filimo.merge(await filimo.preview(s.metadataUrl),s));
+      if (metadataProviders[s.metadataProvider]) {
+        const provider=metadataProviders[s.metadataProvider];
+        Object.assign(s,provider.merge(await provider.preview(s.metadataUrl),s));
         await save(); return;
       }
       const meta = await catalogApi.preview(s.pageUrl),
@@ -291,10 +296,12 @@ function createServer({
         if (!result.ok) throw Error(webdav.errorMessage(status));
         return send(200,result);
       }
-      if (p === "/api/filimo" && req.method === "POST") {
-        const meta = await filimo.preview(body.url);
-        const old = db.items.find(x=>x.metadataProvider==='filimo' && x.metadataSourceId===meta.metadataSourceId);
-        const item = filimo.merge(meta,old);
+      const importTarget = p === "/api/series" && req.method === "POST" ? importSource.detect(body.url) : null;
+      if ((["/api/filimo","/api/filmnet"].includes(p) || metadataProviders[importTarget?.provider]) && req.method === "POST") {
+        const provider=metadataProviders[importTarget?.provider || p.slice(5)];
+        const meta = await provider.preview(body.url);
+        const old = db.items.find(x=>x.metadataProvider===meta.metadataProvider && x.metadataSourceId===meta.metadataSourceId);
+        const item = provider.merge(meta,old);
         item.id = old?.id || crypto.randomBytes(8).toString('hex');
         item.sourceId = item.id; item.addedAt = old?.addedAt || Date.now();
         if(old) Object.assign(old,item); else db.items.push(item);
@@ -314,10 +321,15 @@ function createServer({
         await save();
         return send(200,{id:item.id});
       }
-      if (p === "/api/preview" && req.method === "POST")
-        return send(200, await catalogApi.preview(body.url));
+      if (p === "/api/preview" && req.method === "POST") {
+        const target=importSource.detect(body.url),provider=metadataProviders[target.provider];
+        if(!provider)return send(200,await catalogApi.preview(target.url));
+        const meta=await provider.preview(target.url);
+        return send(200,{...meta,title:meta.sourceTitle,posterUrl:meta.automaticPosterUrl,
+          seasonCount:new Set(meta.episodes.map(e=>e.seasonNumber)).size,episodeCount:meta.episodes.length});
+      }
       if (p === "/api/series" && req.method === "GET") {
-        for (const item of db.items) if(item.metadataProvider==='filimo' && item.importState!=='RUNNING' && Date.now()-(item.lastMetadataAttempt||item.lastMetadataRefresh||0)>6*3600000) {
+        for (const item of db.items) if(metadataProviders[item.metadataProvider] && item.importState!=='RUNNING' && Date.now()-(item.lastMetadataAttempt||item.lastMetadataRefresh||0)>6*3600000) {
           item.lastMetadataAttempt=Date.now(); refresh(item).catch(e=>console.error('iTV metadata:',e.message));
         }
         return send(200, { items: db.items.map(output) });
@@ -374,7 +386,7 @@ function createServer({
         const s = db.items.find((x) => x.id === m[1]);
         if (!s) return send(404, { error: "عنوان پیدا نشد" });
         if (m[2] === "refresh" && req.method === "POST") {
-          if (s.kind === "webdav" && s.metadataProvider !== "filimo") return send(200,{ok:true});
+          if (s.kind === "webdav" && !metadataProviders[s.metadataProvider]) return send(200,{ok:true});
           if (s.importState !== "RUNNING")
             refresh(s).catch((e) => console.error("iTV import:", e.message));
           return send(200, { ok: true });

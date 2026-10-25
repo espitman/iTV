@@ -80,7 +80,7 @@ function card(s, episode) {
   const number = e && (e.displayNumber ||
     (ITVRules.ordered(s.episodes).filter(row => row.seasonNumber === e.seasonNumber)
       .findIndex(row => row.sourceEpisodeId === e.sourceEpisodeId) + 1));
-  const title = e ? `قسمت ${fa(number)}` : s.title;
+  const title = e ? e.displayLabel || `قسمت ${fa(number)}` : s.title;
   const image = asset(e ? e.imageUrl || s.posterUrl : s.posterUrl);
   const position = e?.position || 0,
     duration = e?.duration || 1;

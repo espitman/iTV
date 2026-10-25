@@ -53,10 +53,10 @@
         </div>
 
         <section class="panel" id="add">
-          <h2>افزودن فیلم یا سریال از تلوبیون</h2>
-          <p>لینک صفحهٔ فیلم یا سریال را وارد کنید؛ اطلاعات و قسمت‌ها خودکار پیدا می‌شوند.</p>
+          <h2>افزودن فیلم یا سریال</h2>
+          <p>لینک فیلیمو، فیلم‌نت، شیدا یا تلوبیون را وارد کنید؛ منبع، مشخصات و قسمت‌ها خودکار تشخیص داده می‌شوند.</p>
           <div class="row">
-            <input aria-label="نشانی تلوبیون" id="url" dir="ltr" placeholder="https://telewebion.net/product/0x...">
+            <input aria-label="لینک فیلم یا سریال" id="url" dir="ltr" placeholder="لینک صفحهٔ فیلم یا سریال">
             <button id="preview-btn" type="button">پیش‌نمایش</button>
             <button class="primary" id="add-btn" type="button">＋ افزودن به کتابخانه</button>
           </div>
@@ -64,7 +64,6 @@
           <div id="preview" class="preview hidden"></div>
         </section>
 
-        <section class="panel"><h2>ورود اطلاعات از فیلیمو</h2><p>لینک صفحه را بدهید؛ مشخصات و قسمت‌های منتشرشده دریافت می‌شود. سپس لینک فایل هر قسمت روی گوشی را وارد کنید. قسمت‌های جدید هنگام بازکردن کتابخانه (هر ۶ ساعت) یا با دکمهٔ به‌روزرسانی اضافه می‌شوند.</p><form id="filimo-form" class="row"><input id="filimo-url" aria-label="لینک صفحهٔ فیلیمو" type="url" dir="ltr" placeholder="https://www.filimo.com/n/h78m0" required><button id="filimo-add" class="primary">دریافت اطلاعات</button></form><p id="filimo-msg" role="status"></p></section>
         <section class="panel"><h2>فیلم و سریال شخصی از گوشی</h2><p>مشخصات و فصل‌ها را خودتان تعریف کنید و لینک مستقیم فایل‌های WebDAV را بدهید. هنگام پخش، گوشی و سرویس WebDAV باید در دسترس تلویزیون باشند.</p><button type="button" id="manual-add" class="primary">＋ افزودن عنوان شخصی / WebDAV</button></section>
         <section class="panel" id="library">
           <h2>کتابخانه</h2>
@@ -316,14 +315,17 @@
     $("add-btn").onclick = async () => {
       $("add-msg").textContent = "";
       try {
-        await api("/api/series", { method: "POST", body: JSON.stringify({ url: $("url").value || lastUrl }) });
+        $("add-btn").disabled=true; $("preview-btn").disabled=true;
+        $("add-msg").textContent="در حال تشخیص منبع و دریافت اطلاعات…";
+        const item=await api("/api/series", { method: "POST", body: JSON.stringify({ url: $("url").value || lastUrl }) });
         $("add-msg").className = "ok";
-        $("add-msg").textContent = "به صف ورود اضافه شد";
+        $("add-msg").textContent = item.metadataProvider ? "اطلاعات دریافت شد؛ لینک فایل‌ها را وارد کنید." : "به صف ورود اضافه شد";
         await refreshList();
+        if(item.metadataProvider)openManual(item);
       } catch (e) {
         $("add-msg").className = "error";
         $("add-msg").textContent = e.message;
-      }
+      } finally { $("add-btn").disabled=false; $("preview-btn").disabled=false; }
     };
 
     $("rows").onclick = async (event) => {
@@ -504,17 +506,11 @@
     };
 
     let manualId = null, manualImported = false;
-    $('filimo-form').onsubmit=async event=>{
-      event.preventDefault(); $('filimo-add').disabled=true; $('filimo-msg').textContent='در حال دریافت اطلاعات و قسمت‌ها…';
-      try { const item=await api('/api/filimo',{method:'POST',body:JSON.stringify({url:$('filimo-url').value})});
-        await refreshList(); openManual(item); $('filimo-msg').textContent='اطلاعات دریافت شد؛ لینک فایل‌ها را وارد کنید.';
-      }catch(e){$('filimo-msg').textContent=e.message;}finally{$('filimo-add').disabled=false;}
-    };
     function addManualEpisode(e = {}) {
       const row = document.createElement('div');
       row.className = 'manual-episode';
       row.dataset.episode = e.sourceEpisodeId || '';
-      row.innerHTML = `<label>فصل<input class="ms" type="number" min="1" max="10000" value="${Number(e.seasonNumber)||1}" required></label><label>قسمت<input class="mn" type="number" min="1" max="10000" value="${Number(e.displayNumber)||$('manual-episodes').children.length+1}" required></label><label class="manual-episode-title">عنوان قسمت (اختیاری)<input class="mt" value="${escapeHtml(e.title||'')}"></label><label class="manual-url">لینک مستقیم فایل<input class="mu" dir="ltr" type="url" placeholder="http://192.168.1.20:8080/Movies/video.mp4" value="${escapeHtml(e.mediaUrl||'')}" required></label><div class="row"><button type="button" class="test">آزمون فایل</button><button type="button" class="remove danger">حذف قسمت</button></div><small class="test-result" role="status"></small>`;
+      row.innerHTML = `<label>فصل<input class="ms" type="number" min="1" max="10000" value="${Number(e.seasonNumber)||1}" required></label><label>قسمت<input class="mn" type="number" min="${e.metadataSpecial ? 0 : 1}" max="10000" value="${e.metadataSpecial ? 0 : Number(e.displayNumber)||$('manual-episodes').children.length+1}" ${e.metadataSpecial ? 'readonly aria-label="قسمت ویژه"' : ''} required></label><label class="manual-episode-title">عنوان قسمت (اختیاری)<input class="mt" value="${escapeHtml(e.title||'')}"></label><label class="manual-url">لینک مستقیم فایل<input class="mu" dir="ltr" type="url" placeholder="http://192.168.1.20:8080/Movies/video.mp4" value="${escapeHtml(e.mediaUrl||'')}" required></label><div class="row"><button type="button" class="test">آزمون فایل</button><button type="button" class="remove danger">حذف قسمت</button></div><small class="test-result" role="status"></small>`;
       row.querySelector('.mu').required = !manualImported;
       row.querySelector('.remove').onclick = () => row.remove();
       row.querySelector('.test').onclick = async () => {
@@ -533,7 +529,7 @@
       return data;
     }
     function openManual(item = null) {
-      manualId = item?.id || null; manualImported = item?.metadataProvider === 'filimo';
+      manualId = item?.id || null; manualImported = ['filimo','filmnet','sheyda'].includes(item?.metadataProvider);
       $('manual-form').reset();
       $('manual-heading').textContent = manualImported ? 'فایل‌های WebDAV · '+item.title : item ? 'ویرایش فیلم یا سریال شخصی' : 'افزودن فیلم یا سریال شخصی';
       $('manual-title').value = item?.title || '';
