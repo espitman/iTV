@@ -54,7 +54,7 @@
 
         <section class="panel" id="add">
           <h2>افزودن فیلم یا سریال</h2>
-          <p>لینک فیلیمو، فیلم‌نت، شیدا یا تلوبیون را وارد کنید؛ منبع، مشخصات و قسمت‌ها خودکار تشخیص داده می‌شوند.</p>
+          <p>لینک فیلیمو، فیلم‌نت، شیدا، نماوا یا تلوبیون را وارد کنید؛ منبع، مشخصات و قسمت‌ها خودکار تشخیص داده می‌شوند.</p>
           <div class="row">
             <input aria-label="لینک فیلم یا سریال" id="url" dir="ltr" placeholder="لینک صفحهٔ فیلم یا سریال">
             <button id="preview-btn" type="button">پیش‌نمایش</button>
@@ -529,7 +529,7 @@
       return data;
     }
     function openManual(item = null) {
-      manualId = item?.id || null; manualImported = ['filimo','filmnet','sheyda'].includes(item?.metadataProvider);
+      manualId = item?.id || null; manualImported = ['filimo','filmnet','sheyda','namava'].includes(item?.metadataProvider);
       $('manual-form').reset();
       $('manual-heading').textContent = manualImported ? 'فایل‌های WebDAV · '+item.title : item ? 'ویرایش فیلم یا سریال شخصی' : 'افزودن فیلم یا سریال شخصی';
       $('manual-title').value = item?.title || '';

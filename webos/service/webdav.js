@@ -19,7 +19,7 @@ function normalize(body, old = {}) {
   const episodes = body.episodes.map((e,index) => {
     const seasonNumber = body.isMovie ? 1 : Number(e.seasonNumber);
     const number = body.isMovie ? 1 : Number(e.displayNumber);
-    const special = old.metadataProvider === "sheyda" && (old.episodes || []).some(x=>x.sourceEpisodeId===e.sourceEpisodeId && x.metadataSpecial) && number===0;
+    const special = ["sheyda","namava"].includes(old.metadataProvider) && (old.episodes || []).some(x=>x.sourceEpisodeId===e.sourceEpisodeId && x.metadataSpecial) && number===0;
     if (!Number.isInteger(seasonNumber) || seasonNumber<1 || seasonNumber>10000 || !Number.isInteger(number) || number>10000 || (number<1 && !special))
       throw Error("شمارهٔ فصل و قسمت باید عدد مثبت باشد");
     const key = `${seasonNumber}:${number}`;
@@ -31,14 +31,14 @@ function normalize(body, old = {}) {
     ids.add(id);
     return {...previous, sourceEpisodeId:id, seasonNumber, displayNumber:String(number),
       sourceOrder:index, title:String(e.title || `قسمت ${number}`).slice(0,300),
-      mediaUrl:["filimo","filmnet","sheyda"].includes(old.metadataProvider) && previous && !(e.url || e.mediaUrl) ? "" : mediaUrl(e.url || e.mediaUrl), sourcePresent:true,
+      mediaUrl:["filimo","filmnet","sheyda","namava"].includes(old.metadataProvider) && previous && !(e.url || e.mediaUrl) ? "" : mediaUrl(e.url || e.mediaUrl), sourcePresent:true,
       position:previous?.position || 0, watched:!!previous?.watched};
   });
   const credentials = {username:String(body.username ?? old.webdav?.username ?? ""),
     password:body.clearCredentials ? "" : String(body.password || old.webdav?.password || "")};
   if (body.clearCredentials) credentials.username = "";
   if (credentials.username.length > 1000 || credentials.password.length > 4000) throw Error("اطلاعات ورود بیش از حد طولانی است");
-  return {...old, kind:"webdav", sourceTitle:title, localTitle:["filimo","filmnet","sheyda"].includes(old.metadataProvider) ? title : null,
+  return {...old, kind:"webdav", sourceTitle:title, localTitle:["filimo","filmnet","sheyda","namava"].includes(old.metadataProvider) ? title : null,
     description:String(body.description || "").slice(0,10000), isMovie:body.isMovie,
     episodes, webdav:credentials, importState:"READY", importError:null};
 }

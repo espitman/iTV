@@ -124,3 +124,7 @@ Validated with the public Yal content page (one season, three episodes), importe
 The panel now uses one shared link field for Telewebion, Filimo and Filmnet. Both preview and add detect the provider from a validated exact hostname. Imported Filimo/Filmnet titles open the WebDAV file editor; Telewebion retains its existing catalog/playback import. Unsupported or malformed links are rejected before fetching remote data.
 
 Sheyda program links (`https://www.sheyda.com/p/<uid>`) are also auto-detected. Public metadata queries create their own anonymous device session through the site's normal getDid endpoint; no browser login or subscription credentials are used. Every season is fetched before updating the library. Episode numbers come from the episode title rather than playlist order, and released specials retain their own labels (internal display number zero) without shifting regular episode numbers. Existing file links and progress remain tied to stable source episode IDs. Verified against Bamdad Khomar: two seasons, 28 released entries including one special.
+
+### Namava metadata
+
+The shared import field detects Namava series links. Public series and season APIs provide episode images, numbering, cast and artwork. Recaps keep their own labels; file URLs and watch state survive refresh. Future episodes are excluded, and incomplete responses leave the library intact.
