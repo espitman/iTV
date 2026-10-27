@@ -170,7 +170,7 @@ function render() {
         "credits",
       );
   } else if (state.route === "settings") {
-    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.44.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
+    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.45.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
       state.session?.pin || "----",
     )
       .split("")
@@ -223,7 +223,17 @@ async function go(route, id) {
   root.scrollTop = 0;
   render();
 }
+function revealHomeRow(target) {
+  if (state.route !== "home") return;
+  const library = target.closest(".home-library"),
+    section = target.closest(".section");
+  if (!library || !section) return;
+  // Leave enough room for the last shelf to align with the first shelf's slot.
+  library.style.paddingBottom = `${Math.max(80, library.clientHeight - section.offsetHeight)}px`;
+  library.scrollTo({ top: section.offsetTop, behavior: "smooth" });
+}
 root.addEventListener("focusin", (e) => {
+  revealHomeRow(e.target);
   const b = e.target.closest(".poster[data-id]");
   if (state.route === "home" && b) {
     const s = state.items.find((s) => s.id === b.dataset.id);
@@ -843,6 +853,23 @@ function jump() {
     showControls();
   };
 }
+function focusSpatial(target) {
+  const library = state.route === "home" && target.closest(".home-library");
+  if (library) {
+    target.focus({ preventScroll: true });
+    const shelf = target.closest(".shelf");
+    if (shelf) {
+      const item = target.getBoundingClientRect(), box = shelf.getBoundingClientRect();
+      const delta = item.left < box.left ? item.left - box.left :
+        item.right > box.right ? item.right - box.right : 0;
+      if (delta) shelf.scrollBy({ left: delta, behavior: "smooth" });
+    }
+    revealHomeRow(target);
+  } else {
+    target.focus();
+    target.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+}
 function spatial(key) {
   const container = modal.open ? modal : root;
   const candidates = [
@@ -858,6 +885,21 @@ function spatial(key) {
     y = r.y + r.height / 2;
   const horizontal = key === "ArrowLeft" || key === "ArrowRight",
     sign = key === "ArrowLeft" || key === "ArrowUp" ? -1 : 1;
+  // Home shelves keep their logical order even when the previous shelf is clipped.
+  if (!horizontal && !modal.open && state.route === "home") {
+    const shelves = [...root.querySelectorAll(".home-library .shelf")],
+      index = shelves.indexOf(current.closest(".shelf")),
+      adjacent = index >= 0 ? shelves[index + sign] : null;
+    if (adjacent) {
+      const next = candidates.filter(c => c.closest(".shelf") === adjacent)
+        .sort((a, b) => Math.abs(a.getBoundingClientRect().x + a.getBoundingClientRect().width / 2 - x) -
+          Math.abs(b.getBoundingClientRect().x + b.getBoundingClientRect().width / 2 - x))[0];
+      if (next) {
+        focusSpatial(next);
+        return;
+      }
+    }
+  }
   const rowSelector = ".shelf,.chips,nav,.actions,.grid",
     row = horizontal ? current.closest(rowSelector) : null;
   let best = null,
@@ -880,8 +922,7 @@ function spatial(key) {
     }
   }
   if (best) {
-    best.focus();
-    best.scrollIntoView({ block: "nearest", inline: "nearest" });
+    focusSpatial(best);
   }
 }
 function commitTimelineSeek(p) {
