@@ -80,7 +80,7 @@ const posterCache = new Map();
 let posterCacheBytes = 0;
 const posterCacheLimit = 24 * 1024 * 1024;
 function posterKey(img) {
-  return `${img.dataset?.src || img.currentSrc || img.src || ""}|${Math.max(1, Math.round(img.clientWidth))}x${Math.max(1, Math.round(img.clientHeight))}`;
+  return `${img.dataset?.originalSrc || img.dataset?.src || img.currentSrc || img.src || ""}|${Math.max(1, Math.round(img.clientWidth))}x${Math.max(1, Math.round(img.clientHeight))}`;
 }
 function posterCanvas(img, source) {
   const canvas = document.createElement("canvas"), context = canvas.getContext("2d");
@@ -130,11 +130,49 @@ function compactPoster(img) {
     img.removeAttribute("src");
   } catch (_) { /* Keep the original artwork if canvas is unavailable. */ }
 }
+const artworkQueue = [];
+let artworkActive = 0;
+function queueArtwork(task) {
+  artworkQueue.push(task);
+  function drain() {
+    while (artworkActive < 2 && artworkQueue.length) {
+      artworkActive++;
+      Promise.resolve().then(artworkQueue.shift()).catch(()=>{}).finally(()=>{artworkActive--;drain();});
+    }
+  }
+  drain();
+}
+function loadHeroArtwork(art) {
+  const source = art?.dataset.background;
+  if (!source) return;
+  art.removeAttribute("data-background");
+  queueArtwork(async () => {
+    if (!art.isConnected) return;
+    let url = source;
+    if (source.startsWith("https://")) {
+      try { url = asset((await api("/api/artwork", {url:source}, "POST", 20000)).url); } catch (_) {}
+    }
+    if (art.isConnected) art.style.backgroundImage = `url(${JSON.stringify(url)})`;
+  });
+}
 let posterObserver;
 function loadPosters() {
   posterObserver?.disconnect();
+  loadHeroArtwork(root.querySelector?.(".hero-art[data-background]"));
   const images = [...root.querySelectorAll("img[data-src]")].filter(img => !restorePoster(img));
-  const load = img => { img.src = img.dataset.src; img.removeAttribute("data-src"); };
+  const load = img => {
+    const source = img.dataset.src;
+    img.dataset.originalSrc = source;
+    img.removeAttribute("data-src");
+    if (typeof api !== "function" || !source?.startsWith("https://")) { img.src = source; return; }
+    queueArtwork(async () => {
+      if (!img.isConnected) return;
+      try {
+        const cached = await api("/api/artwork", {url:source}, "POST", 20000);
+        if (img.isConnected) img.src = asset(cached.url);
+      } catch (_) { if (img.isConnected) img.src = source; }
+    });
+  };
   if (typeof IntersectionObserver === "undefined") { images.forEach(load); return; }
   posterObserver = new IntersectionObserver(entries => {
     for (const entry of entries) if (entry.isIntersecting) {
@@ -163,7 +201,7 @@ function hero(s, detail = false) {
     ? `فیلم سینمایی · ${fa(s.durationMinutes)} دقیقه`
     : `سریال · ${fa(s.seasonCount || 1)} فصل · ${fa(s.episodes.length)} قسمت`;
   const play = `<button class="primary" data-action="play" data-id="${s.id}">${detail ? ITVIcons.play_tiny : ""}<span>${playLabel}</span>${!detail ? ITVIcons.play_tiny : ""}</button>`;
-  return `<section class="hero ${detail ? "detail" : ""}"><div class="hero-art" style="background-image:url(&quot;${esc(url)}&quot;)"><div class="hero-wash"></div><div class="hero-bottom"></div><div class="hero-right"></div></div><div class="hero-copy"><h1>${esc(fa(s.title))}</h1>${detail ? `<div class="detail-meta">${meta}</div>${s.description ? `<p>${esc(fa(s.description))}</p>` : ""}` : `<div class="meta"><small>${s.isMovie ? "فیلم سینمایی" : "سریال"}</small><small>${fa(s.seasonCount || 1)} فصل</small><small>${fa(s.episodes.length)} قسمت</small></div>`}<div class="actions">${!detail ? button("جزئیات", "detail", `data-id="${s.id}"`) : ""}${play}</div></div></section>`;
+  return `<section class="hero ${detail ? "detail" : ""}"><div class="hero-art" data-background="${esc(url)}"><div class="hero-wash"></div><div class="hero-bottom"></div><div class="hero-right"></div></div><div class="hero-copy"><h1>${esc(fa(s.title))}</h1>${detail ? `<div class="detail-meta">${meta}</div>${s.description ? `<p>${esc(fa(s.description))}</p>` : ""}` : `<div class="meta"><small>${s.isMovie ? "فیلم سینمایی" : "سریال"}</small><small>${fa(s.seasonCount || 1)} فصل</small><small>${fa(s.episodes.length)} قسمت</small></div>`}<div class="actions">${!detail ? button("جزئیات", "detail", `data-id="${s.id}"`) : ""}${play}</div></div></section>`;
 }
 function section(title, html, cls = "") {
   return `<section class="section ${cls === "credits" ? "credits-section" : ""}"><h2>${esc(title)}${cls === "continuing" ? '<small class="continue-hint">برای حذف، دکمهٔ تأیید را نگه دارید</small>' : ""}</h2><div class="shelf ${cls}">${html}</div></section>`;
@@ -239,7 +277,7 @@ function render() {
         "credits",
       );
   } else if (state.route === "settings") {
-    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.52.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
+    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.54.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
       state.session?.pin || "----",
     )
       .split("")
@@ -314,6 +352,7 @@ root.addEventListener("focusin", (e) => {
         const box = document.createElement("div");
         box.innerHTML = hero(s);
         old.replaceWith(box.firstElementChild);
+        loadHeroArtwork(root.querySelector(".hero-art[data-background]"));
       }
     }
   }

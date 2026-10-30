@@ -128,3 +128,7 @@ Sheyda program links (`https://www.sheyda.com/p/<uid>`) are also auto-detected. 
 ### Namava metadata
 
 The shared import field detects Namava series links. Public series and season APIs provide episode images, numbering, cast and artwork. Recaps keep their own labels; file URLs and watch state survive refresh. Future episodes are excluded, and incomplete responses leave the library intact.
+
+### Persistent artwork cache
+
+TV artwork is cached in the service data directory (`artwork-cache/`) across app and service restarts. The 128 MiB disk cache uses URL hashes, validates image bytes, limits individual files to 20 MiB, and evicts least recently used files. Only artwork URLs already present in the library may be fetched through the TV-authenticated endpoint. The existing 24 MiB in-memory thumbnail cache remains in use; network failures fall back to the original image.

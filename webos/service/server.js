@@ -22,6 +22,7 @@ function createServer({
 }) {
   fs.mkdirSync(dataDir, { recursive: true });
   fs.mkdirSync(path.join(dataDir, "posters"), { recursive: true });
+  const artworkCache = require("./artwork-cache").create(path.join(dataDir, "artwork-cache"));
   const file = path.join(dataDir, "library.json");
   let db = { items: [], tokens: [] };
   if (fs.existsSync(file)) db = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -199,6 +200,10 @@ function createServer({
           await fs.promises.readFile(path.join(__dirname, "dashboard.html")),
           "text/html; charset=utf-8",
         );
+      if (req.method === "GET" && /^\/artwork\/[a-f\d]{64}$/.test(p)) {
+        try { const cached = await artworkCache.read(p.slice(9)); return send(200,cached.body,cached.type); }
+        catch (_) { return send(404,{}); }
+      }
       if (req.method === "GET" && p.startsWith("/fonts/")) {
         const name = p.slice(7);
         if (!["regular.ttf", "bold.ttf"].includes(name)) return send(404, {});
@@ -279,6 +284,15 @@ function createServer({
       }
       if (!tv && !db.tokens.includes(token))
         return send(401, { error: "ابتدا به تلویزیون متصل شوید" });
+      if (p === "/api/artwork" && req.method === "POST" && tv) {
+        const urls = db.items.flatMap(s => [s.automaticPosterUrl,s.customPosterUrl,
+          s.automaticBackdropUrl,s.customBackdropUrl,...(s.episodes||[]).map(e=>e.imageUrl),
+          ...(s.credits||[]).map(c=>c.imageUrl)]);
+        if (!urls.includes(body.url) || !String(body.url).startsWith("https://"))
+          throw Error("عکس در کتابخانه پیدا نشد");
+        const id = await artworkCache.ensure(body.url);
+        return send(200,{url:`/artwork/${id}`});
+      }
       if (p === "/api/logout") {
         db.tokens = db.tokens.filter((t) => t !== token);
         await save();

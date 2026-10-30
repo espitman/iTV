@@ -1,6 +1,6 @@
 {
   "id": "app.itv.webos",
-  "version": "0.52.0",
+  "version": "0.54.0",
   "vendor": "iTV",
   "type": "web",
   "main": "index.html",
