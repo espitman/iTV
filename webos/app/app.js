@@ -166,7 +166,7 @@ function hero(s, detail = false) {
   return `<section class="hero ${detail ? "detail" : ""}"><div class="hero-art" style="background-image:url(&quot;${esc(url)}&quot;)"><div class="hero-wash"></div><div class="hero-bottom"></div><div class="hero-right"></div></div><div class="hero-copy"><h1>${esc(fa(s.title))}</h1>${detail ? `<div class="detail-meta">${meta}</div>${s.description ? `<p>${esc(fa(s.description))}</p>` : ""}` : `<div class="meta"><small>${s.isMovie ? "فیلم سینمایی" : "سریال"}</small><small>${fa(s.seasonCount || 1)} فصل</small><small>${fa(s.episodes.length)} قسمت</small></div>`}<div class="actions">${!detail ? button("جزئیات", "detail", `data-id="${s.id}"`) : ""}${play}</div></div></section>`;
 }
 function section(title, html, cls = "") {
-  return `<section class="section ${cls === "credits" ? "credits-section" : ""}"><h2>${esc(title)}</h2><div class="shelf ${cls}">${html}</div></section>`;
+  return `<section class="section ${cls === "credits" ? "credits-section" : ""}"><h2>${esc(title)}${cls === "continuing" ? '<small class="continue-hint">برای حذف، دکمهٔ تأیید را نگه دارید</small>' : ""}</h2><div class="shelf ${cls}">${html}</div></section>`;
 }
 function render() {
   if (state.player) return;
@@ -187,6 +187,7 @@ function render() {
         section(
           "ادامهٔ تماشا",
           continuing.map(({ s, e }) => card(s, e)).join(""),
+          "continuing",
         ) +
         "</div>";
     html += `<div class="home-library ${continuing.length ? "has-continue" : ""}">`;
@@ -238,7 +239,7 @@ function render() {
         "credits",
       );
   } else if (state.route === "settings") {
-    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.51.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
+    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.52.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
       state.session?.pin || "----",
     )
       .split("")
@@ -339,6 +340,17 @@ async function toggleEpisodeWatched(b) {
   render();
   toast(watched ? "دیده‌شده" : "دیده‌نشده");
 }
+async function removeContinueWatching(b) {
+  const s = state.items.find(s => s.id === b.dataset.id);
+  if (!s) return;
+  const cards = [...root.querySelectorAll(".continue-strip .poster")], index = cards.indexOf(b);
+  await api(`/api/series/${s.id}/continue`, {hidden:true});
+  s.continueHidden = true;
+  render();
+  const next = [...root.querySelectorAll(".continue-strip .poster")];
+  next[Math.min(Math.max(0, index), next.length - 1)]?.focus({preventScroll:true});
+  toast("از ادامهٔ تماشا حذف شد");
+}
 function startEpisodePress(b, kind) {
   if (episodePress) return;
   const press = episodePress = {b, kind, long:false};
@@ -346,7 +358,8 @@ function startEpisodePress(b, kind) {
     if (episodePress !== press) return;
     press.long = true;
     suppressEpisodeClickUntil = Date.now() + 1200;
-    toggleEpisodeWatched(b).catch(err => toast(err.message));
+    (b.closest(".continue-strip") ? removeContinueWatching(b) : toggleEpisodeWatched(b))
+      .catch(err => toast(err.message));
   }, 600);
 }
 function endEpisodePress(cancel = false) {
@@ -621,6 +634,7 @@ function nextEpisode() {
 }
 async function persist(p = state.player) {
   if (!p || !Number.isFinite(p.video.duration)) return;
+  if (p.video.currentTime > 0) p.s.continueHidden = false;
   Object.assign(p.e, ITVRules.progress(p.video.currentTime, p.video.duration), {
     lastPlayed: Date.now(),
   });

@@ -381,7 +381,7 @@ function createServer({
         });
       }
       const m = p.match(
-        /^\/api\/series\/([a-f\d]+)(?:\/(refresh|progress|resolve|qualities|watched))?$/,
+        /^\/api\/series\/([a-f\d]+)(?:\/(refresh|progress|resolve|qualities|watched|continue))?$/,
       );
       if (m) {
         const s = db.items.find((x) => x.id === m[1]);
@@ -417,6 +417,12 @@ function createServer({
               : await catalogApi.resolveHighest(s.kind, body.episodeId),
           );
         }
+        if (m[2] === "continue" && req.method === "POST" && tv) {
+          if (typeof body.hidden !== "boolean") throw Error("وضعیت نامعتبر است");
+          s.continueHidden = body.hidden;
+          await save();
+          return send(200, {ok:true});
+        }
         if (m[2] === "watched" && req.method === "POST" && tv) {
           const episode = s.episodes.find(e => e.sourceEpisodeId === body.episodeId);
           if (!episode) throw Error("قسمت پیدا نشد");
@@ -433,6 +439,7 @@ function createServer({
           if (!e) throw Error("قسمت پیدا نشد");
           const pos = Math.max(0, Number(body.position) || 0),
             duration = Math.max(0, Number(body.duration) || 0);
+          if (pos > 0) s.continueHidden = false;
           Object.assign(e, {
             ...rules.progress(pos, duration),
             lastPlayed: Date.now(),

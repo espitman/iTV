@@ -1403,3 +1403,5 @@ body h1, body h2, body h3, body strong, body b { font-weight: 700 !important; }
 .credits .poster:focus span {
   color: #20dce6;
 }
+
+.continue-hint { float: left; font-size: 16px; font-weight: 400; color: #9cabb2; }

@@ -135,3 +135,9 @@ test('HLS variants accept migrated Telewebion ir CDN hosts without accepting loo
  assert.equal(parseVariants(playlist,'https://cdna.telewebion.ir/master.m3u8').length,2);
  assert.equal(parseVariants('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=3000000,RESOLUTION=1920x1080\n1080/index.m3u8','https://cdna.telewebion.ir/master.m3u8')[0].url,'https://cdna.telewebion.ir/1080/index.m3u8');
 });
+
+test('removing continue watching preserves progress and only hides the chosen title',()=>{
+ const episodes=[{seasonNumber:1,sourceOrder:0,position:30,watched:false}],hidden={id:'hidden',continueHidden:true,episodes},shown={id:'shown',episodes};
+ assert.deepEqual(rules.continueWatching([hidden,shown]).map(s=>s.id),['shown']);assert.equal(hidden.episodes[0].position,30);
+ hidden.continueHidden=false;assert.equal(rules.continueWatching([hidden]).length,1);
+});

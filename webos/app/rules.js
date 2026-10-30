@@ -4,7 +4,7 @@
     continueWatching(items) {
       return items.filter(s => {
         const episodes = this.ordered(s.episodes);
-        return !s.isMovie && episodes.some(e => e.position > 0 || e.watched) &&
+        return !s.continueHidden && !s.isMovie && episodes.some(e => e.position > 0 || e.watched) &&
           !episodes.every(e => e.watched);
       }).sort((a,b) => (b.addedAt || 0) - (a.addedAt || 0) ||
         String(b.id).localeCompare(String(a.id)));

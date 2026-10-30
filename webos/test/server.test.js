@@ -123,6 +123,15 @@ test("pairing, origin protection, uploaded image persistence and progress", asyn
     assert.equal(saved.items[0].episodes[0].position,0);
   }
 
+  assert.equal((await request("/api/series/ab12/continue", {hidden:true}, pair.token)).status,404);
+  assert.equal((await request("/api/series/ab12/continue", {hidden:true}, s.tvToken)).status,200);
+  let hidden = JSON.parse(await fs.readFile(path.join(dir,"library.json"),"utf8")).items[0];
+  assert.equal(hidden.continueHidden,true);
+  assert.equal(hidden.episodes[0].watched,true);
+  assert.equal((await request("/api/series/ab12/progress", {episodeId:"0x2",position:30,duration:1000}, s.tvToken)).status,200);
+  hidden = JSON.parse(await fs.readFile(path.join(dir,"library.json"),"utf8")).items[0];
+  assert.equal(hidden.continueHidden,false);
+
   r = await request("/api/series", undefined, s.tvToken, "GET", {
     Origin: "null",
   });
