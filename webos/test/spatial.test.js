@@ -47,3 +47,10 @@ test('home focus prevents instant browser scrolling and delegates vertical motio
  vm.runInContext(source.slice(source.indexOf('function focusSpatial(target)'),source.indexOf('function spatial(key)')),context);
  context.focusSpatial(target);assert.deepEqual(calls,[true,'smooth']);
 });
+
+test('horizontal shelf steps use adjacent cards without measuring the whole page',()=>{
+ const shelf={classList:{contains:()=>true}},a={parentElement:shelf,getClientRects:()=>[{}]},b={parentElement:shelf,getClientRects:()=>[{}]};a.nextElementSibling=b;b.previousElementSibling=a;
+ const document={activeElement:a},context=vm.createContext({document,getComputedStyle:()=>({direction:'rtl'}),focusSpatial:n=>document.activeElement=n});
+ vm.runInContext(source.slice(source.indexOf('function spatial(key)'),source.indexOf('function commitTimelineSeek')),context);
+ context.spatial('ArrowLeft');assert.equal(document.activeElement,b);context.spatial('ArrowLeft');assert.equal(document.activeElement,b);context.spatial('ArrowRight');assert.equal(document.activeElement,a);
+});

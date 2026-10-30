@@ -22,3 +22,10 @@ test('one import and preview API routes all three providers; unknown links leave
  assert.equal((await post('/api/series','https://example.com/movie')).status,400);
  const rows=await fetch(`http://127.0.0.1:${state.port}/api/series`,{headers:{'x-itv-token':state.tvToken}}).then(r=>r.json());assert.equal(rows.items.length,3);
 });
+
+test('Telewebion ir links and www aliases normalize to the existing catalog source',()=>{
+ for(const host of ['telewebion.ir','www.telewebion.ir','telewebion.net','www.telewebion.net']){
+  assert.deepEqual(detect(`https://${host}/product/0xc7a28fc`),{provider:'telewebion',url:'https://telewebion.net/product/0xc7a28fc'});
+ }
+ for(const url of ['https://telewebion.ir.evil.com/product/0xc7a28fc','https://x@telewebion.ir/product/0xc7a28fc','http://telewebion.ir/product/0xc7a28fc'])assert.throws(()=>detect(url));
+});

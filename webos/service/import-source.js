@@ -7,7 +7,7 @@ function detect(value) {
   if(['filmnet.ir','www.filmnet.ir'].includes(u.hostname))return {provider:'filmnet',url:filmnet.url(u.href)};
   if(['sheyda.com','www.sheyda.com'].includes(u.hostname))return {provider:'sheyda',url:sheyda.url(u.href)};
   if(['namava.ir','www.namava.ir'].includes(u.hostname))return {provider:'namava',url:namava.url(u.href)};
-  if(u.hostname==='telewebion.net')return {provider:'telewebion',url:catalog.source(u.href).pageUrl};
+  if(['telewebion.net','www.telewebion.net','telewebion.ir','www.telewebion.ir'].includes(u.hostname))return {provider:'telewebion',url:catalog.source(u.href).pageUrl};
   throw Error('لینک فیلیمو، فیلم‌نت، شیدا، نماوا یا تلوبیون را وارد کنید');
 }
 module.exports={detect};

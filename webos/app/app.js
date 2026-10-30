@@ -75,6 +75,74 @@ function header() {
     )
     .join("")}</nav></header>`;
 }
+// Bounded cache of display-sized pixels, shared across season/page renders.
+const posterCache = new Map();
+let posterCacheBytes = 0;
+const posterCacheLimit = 24 * 1024 * 1024;
+function posterKey(img) {
+  return `${img.dataset?.src || img.currentSrc || img.src || ""}|${Math.max(1, Math.round(img.clientWidth))}x${Math.max(1, Math.round(img.clientHeight))}`;
+}
+function posterCanvas(img, source) {
+  const canvas = document.createElement("canvas"), context = canvas.getContext("2d");
+  if (!context) return null;
+  canvas.width = Math.max(1, Math.round(img.clientWidth));
+  canvas.height = Math.max(1, Math.round(img.clientHeight));
+  canvas.className = img.className;
+  canvas.setAttribute("aria-hidden", "true");
+  const w = source.naturalWidth || source.width, h = source.naturalHeight || source.height,
+    scale = Math.max(canvas.width / w, canvas.height / h),
+    sw = canvas.width / scale, sh = canvas.height / scale;
+  context.drawImage(source, (w - sw) / 2, (h - sh) / 2, sw, sh,
+    0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+function restorePoster(img) {
+  const key = posterKey(img), cached = posterCache.get(key);
+  if (!cached) return false;
+  try {
+    const canvas = posterCanvas(img, cached);
+    if (!canvas) return false;
+    posterCache.delete(key); posterCache.set(key, cached);
+    img.replaceWith(canvas);
+    return true;
+  } catch (_) { return false; }
+}
+function compactPoster(img) {
+  if (!img.isConnected || !img.naturalWidth) return;
+  try {
+    const key = posterKey(img), canvas = posterCanvas(img, img);
+    if (!canvas) return;
+    const bytes = canvas.width * canvas.height * 4;
+    if (posterCache.has(key)) {
+      const old = posterCache.get(key);
+      posterCacheBytes -= old.width * old.height * 4; posterCache.delete(key);
+    }
+    if (bytes <= posterCacheLimit) {
+      // Cache a detached copy so an entry cannot retain an old page's DOM tree.
+      const cached = posterCanvas(img, canvas);
+      if (cached) { posterCache.set(key, cached); posterCacheBytes += bytes; }
+      while (posterCacheBytes > posterCacheLimit) {
+        const oldest = posterCache.keys().next().value, old = posterCache.get(oldest);
+        posterCacheBytes -= old.width * old.height * 4; posterCache.delete(oldest);
+      }
+    }
+    img.replaceWith(canvas);
+    img.removeAttribute("src");
+  } catch (_) { /* Keep the original artwork if canvas is unavailable. */ }
+}
+let posterObserver;
+function loadPosters() {
+  posterObserver?.disconnect();
+  const images = [...root.querySelectorAll("img[data-src]")].filter(img => !restorePoster(img));
+  const load = img => { img.src = img.dataset.src; img.removeAttribute("data-src"); };
+  if (typeof IntersectionObserver === "undefined") { images.forEach(load); return; }
+  posterObserver = new IntersectionObserver(entries => {
+    for (const entry of entries) if (entry.isIntersecting) {
+      posterObserver.unobserve(entry.target); load(entry.target);
+    }
+  }, { rootMargin: "200px" });
+  images.forEach(img => posterObserver.observe(img));
+}
 function card(s, episode) {
   const e = episode;
   const number = e && (e.displayNumber ||
@@ -84,7 +152,7 @@ function card(s, episode) {
   const image = asset(e ? e.imageUrl || s.posterUrl : s.posterUrl);
   const position = e?.position || 0,
     duration = e?.duration || 1;
-  return `<button class="poster ${e ? "wide" : ""}" aria-label="${esc(fa(title))}" data-action="${e ? "play" : "detail"}" data-id="${s.id}" ${e ? `data-episode="${esc(e.sourceEpisodeId)}"` : ""}><img src="${esc(image)}" alt="" onload="this.classList.add('loaded')" onerror="this.style.visibility='hidden';this.parentElement.querySelector('span')?.classList.remove('poster-caption')"><span class="${!e && image ? "poster-caption" : ""}">${esc(fa(title))}</span>${e?.watched ? `<small class="watched">${ITVIcons.watched_check}</small>` : ""}${position ? `<i class="progress" style="width:${Math.min(100, (position / duration) * 100)}%"></i>` : ""}</button>`;
+  return `<button class="poster ${e ? "wide" : ""}" aria-label="${esc(fa(title))}" data-action="${e ? "play" : "detail"}" data-id="${s.id}" ${e ? `data-episode="${esc(e.sourceEpisodeId)}"` : ""}><img data-src="${esc(image)}" decoding="async" alt="" onload="this.classList.add('loaded');compactPoster(this)" onerror="this.style.visibility='hidden';this.parentElement.querySelector('span')?.classList.remove('poster-caption')"><span class="${!e && image ? "poster-caption" : ""}">${esc(fa(title))}</span>${e?.watched ? `<small class="watched">${ITVIcons.watched_check}</small>` : ""}${position ? `<i class="progress" style="width:${Math.min(100, (position / duration) * 100)}%"></i>` : ""}</button>`;
 }
 const selected = (s) => ITVRules.select(s.episodes);
 function hero(s, detail = false) {
@@ -164,13 +232,13 @@ function render() {
         s.credits
           .map(
             (p) =>
-              `<div class="poster" tabindex="0" role="group" aria-label="${esc(p.name)}"><img src="${esc(asset(p.imageUrl))}" alt=""><span>${esc(p.name)}</span><small>${esc(p.role)}</small></div>`,
+              `<div class="poster" tabindex="0" role="group" aria-label="${esc(p.name)}"><img data-src="${esc(asset(p.imageUrl))}" decoding="async" alt="" onload="compactPoster(this)"><span>${esc(p.name)}</span><small>${esc(p.role)}</small></div>`,
           )
           .join(""),
         "credits",
       );
   } else if (state.route === "settings") {
-    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.45.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
+    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.51.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
       state.session?.pin || "----",
     )
       .split("")
@@ -194,6 +262,7 @@ function render() {
   }
   const focus = document.activeElement?.dataset;
   root.innerHTML = html;
+  loadPosters();
   if (state.route === "settings" && state.session?.url)
     document.querySelector("#qr").innerHTML = ITVQR.toSvg(state.session.url);
   let target = focus?.action
@@ -866,11 +935,21 @@ function focusSpatial(target) {
     }
     revealHomeRow(target);
   } else {
-    target.focus();
+    target.focus({ preventScroll: true });
     target.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 }
 function spatial(key) {
+  const focused = document.activeElement, shelf = focused?.parentElement;
+  if ((key === "ArrowLeft" || key === "ArrowRight") && shelf?.classList.contains("shelf")) {
+    const rtl = getComputedStyle(shelf).direction === "rtl",
+      forward = (key === "ArrowLeft") === rtl;
+    let next = forward ? focused.nextElementSibling : focused.previousElementSibling;
+    while (next && (next.disabled || !next.getClientRects().length))
+      next = forward ? next.nextElementSibling : next.previousElementSibling;
+    if (next) focusSpatial(next);
+    return;
+  }
   const container = modal.open ? modal : root;
   const candidates = [
     ...container.querySelectorAll('button,input,select,[tabindex="0"]'),

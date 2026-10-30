@@ -128,3 +128,10 @@ test("continue watching matches Android series filtering and has one row per ser
   ];
   assert.deepEqual(rules.continueWatching(items).map(s=>s.id), ['b','a']);
 });
+
+test('HLS variants accept migrated Telewebion ir CDN hosts without accepting lookalikes',()=>{
+ const {parseVariants}=require('../service/catalog');
+ const playlist='#EXTM3U\n'+['https://cdna.telewebion.ir/high/index.m3u8','https://cdna.telewebion.net/low/index.m3u8','https://telewebion.ir.evil.com/evil.m3u8','https://eviltelewebion.ir/a.m3u8'].map(url=>'#EXT-X-STREAM-INF:BANDWIDTH=3000000,RESOLUTION=1920x1080\n'+url).join('\n');
+ assert.equal(parseVariants(playlist,'https://cdna.telewebion.ir/master.m3u8').length,2);
+ assert.equal(parseVariants('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=3000000,RESOLUTION=1920x1080\n1080/index.m3u8','https://cdna.telewebion.ir/master.m3u8')[0].url,'https://cdna.telewebion.ir/1080/index.m3u8');
+});

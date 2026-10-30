@@ -370,7 +370,7 @@ header nav button:focus {
   text-align: right;
   transition: transform 150ms;
 }
-.poster img {
+.poster :is(img, canvas) {
   display: block;
   width: 100%;
   height: 100%;
@@ -551,7 +551,7 @@ header nav button:focus {
   padding: 6px;
   border-radius: 20px;
 }
-.episodes .poster.wide img {
+.episodes .poster.wide :is(img, canvas) {
   height: var(--series-episode-thumb-h);
   width: 100%;
   border-radius: 14px;
@@ -575,7 +575,7 @@ header nav button:focus {
   background: transparent;
   transform: none;
 }
-.episodes .poster:focus img {
+.episodes .poster:focus :is(img, canvas) {
   outline: 4px solid #20dce6;
   outline-offset: 2px;
   box-shadow: 0 0 0 10px #20dce633;
@@ -611,7 +611,7 @@ header nav button:focus {
   background: transparent;
   text-align: center;
 }
-.credits .poster img {
+.credits .poster :is(img, canvas) {
   width: var(--credit-portrait);
   height: var(--credit-portrait);
   border-radius: 50%;
@@ -647,7 +647,7 @@ header nav button:focus {
   aspect-ratio: 2/3;
   flex-basis: auto;
 }
-.grid .poster img {
+.grid .poster :is(img, canvas) {
   width: 100%;
   height: 100%;
 }
@@ -952,7 +952,7 @@ header nav button:focus {
 .pause-info[hidden] {
   display: none;
 }
-.pause-info img {
+.pause-info :is(img, canvas) {
   width: 192px;
   height: 288px;
   object-fit: cover;
@@ -1269,7 +1269,7 @@ dialog .actions {
   gap: 24px;
   align-items: center;
 }
-.next-info img {
+.next-info :is(img, canvas) {
   width: 252px;
   height: 156px;
   object-fit: cover;
@@ -1386,7 +1386,7 @@ body h1, body h2, body h3, body strong, body b { font-weight: 700 !important; }
   flex-basis: 192px;
   width: 192px;
 }
-.credits .poster img {
+.credits .poster :is(img, canvas) {
   margin-inline: auto;
 }
 .credits .poster:focus {
@@ -1395,7 +1395,7 @@ body h1, body h2, body h3, body strong, body b { font-weight: 700 !important; }
   transform: none;
   background: transparent;
 }
-.credits .poster:focus img {
+.credits .poster:focus :is(img, canvas) {
   outline: 3px solid #20dce6;
   outline-offset: -3px;
   box-shadow: none;

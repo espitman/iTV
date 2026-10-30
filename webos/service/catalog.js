@@ -7,7 +7,7 @@ function source(raw) {
   );
   if (
     u.protocol !== "https:" ||
-    u.hostname !== "telewebion.net" ||
+    !["telewebion.net", "www.telewebion.net", "telewebion.ir", "www.telewebion.ir"].includes(u.hostname) ||
     u.username ||
     u.password ||
     (u.port && u.port !== "443")
@@ -23,12 +23,12 @@ function source(raw) {
     pageUrl: `https://telewebion.net/${m[1].toLowerCase()}/${m[2].toLowerCase()}`,
   };
 }
-function get(url, asText = false, redirects = 0) {
+function get(url, asText = false, redirects = 0, headers = {}) {
   return new Promise((resolve, reject) => {
     const r = https.get(
       url,
       {
-        headers: { Accept: "application/json", "User-Agent": "iTV/0.31 webOS" },
+        headers: { Accept: "application/json", "User-Agent": "iTV/0.31 webOS", ...headers },
       },
       (res) => {
         if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
@@ -42,7 +42,9 @@ function get(url, asText = false, redirects = 0) {
               next.password ||
               !(
                 next.hostname === "telewebion.net" ||
-                next.hostname.endsWith(".telewebion.net")
+                next.hostname.endsWith(".telewebion.net") ||
+                next.hostname === "telewebion.ir" ||
+                next.hostname.endsWith(".telewebion.ir")
               )
             )
               throw Error("تغییر مسیر منبع نامعتبر است");
@@ -159,8 +161,8 @@ function markers(c) {
     out[k] = Math.max(0, Number((c.titraje || {})[k] || c[k]) || 0);
   return out;
 }
-async function content(id) {
-  const r = await get(
+async function content(id, fetch = get) {
+  const r = await fetch(
     `${BASE}/kandoo/vod/content/get-content?content_id=${id}&q=abc`,
   );
   const c = r.body?.content?.[0];
@@ -267,11 +269,11 @@ async function episodes(meta, onPage = async () => {}) {
       a.sourceOrder - b.sourceOrder,
   );
 }
-async function resolve(kind, id) {
+async function resolve(kind, id, fetch = get) {
   let c, url;
   if (!/^0x[\da-f]+$/i.test(id)) throw Error("شناسه نامعتبر است");
   if (kind === "program") {
-    const r = await get(
+    const r = await fetch(
       `${BASE}/kandoo/episode/getEpisodeDetail/?EpisodeId=${id}`,
     );
     c = r.body?.queryEpisode?.[0];
@@ -280,16 +282,28 @@ async function resolve(kind, id) {
     if (!/^[\w-]+$/.test(channel || "")) throw Error("کانال نامعتبر است");
     url = `https://cdna.telewebion.net/${channel}/episode/${id}/playlist.m3u8`;
   } else {
-    c = await content(id);
+    c = await content(id, fetch);
     url = c.stream?.telewebion;
-    if (typeof url !== "string" || !url.trim())
-      throw Error("این قسمت لینک پخش تلوبیون ندارد و از این منبع قابل پخش نیست");
+    if (typeof url !== "string" || !url.trim()) {
+      // The public player obtains FREE VOD sources through Aparatchi,
+      // using the content token returned by the same public metadata API.
+      if (c.content_status !== "FREE" || !c.content_token || c.enable === false)
+        throw Error("این قسمت از مسیر پخش عمومی تلوبیون در دسترس نیست");
+      const response = await fetch(
+        `https://rozaneh.telewebion.ir/aparatchi/api/v1/stream/${id}`,
+        false, 0, { content: c.content_token });
+      url = response.body?.source?.find(s =>
+        ["application/x-mpegURL", "application/vnd.apple.mpegurl"].includes(s.type))?.src;
+      if (typeof url !== "string" || !url.trim())
+        throw Error("تلوبیون لینک پخش معتبری برای این قسمت برنگرداند");
+    }
   }
   const u = new URL(url);
   if (
     u.protocol !== "https:" ||
     !(
-      u.hostname === "telewebion.net" || u.hostname.endsWith(".telewebion.net")
+      u.hostname === "telewebion.net" || u.hostname.endsWith(".telewebion.net") ||
+      u.hostname === "telewebion.ir" || u.hostname.endsWith(".telewebion.ir")
     ) ||
     u.username ||
     u.password
@@ -314,7 +328,8 @@ function parseVariants(text, base) {
       if (
         url.protocol === "https:" &&
         (url.hostname === "telewebion.net" ||
-          url.hostname.endsWith(".telewebion.net")) &&
+          url.hostname.endsWith(".telewebion.net") ||
+          url.hostname === "telewebion.ir" || url.hostname.endsWith(".telewebion.ir")) &&
         !url.username &&
         !url.password
       )
