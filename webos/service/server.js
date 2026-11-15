@@ -26,6 +26,7 @@ function createServer({
   const file = path.join(dataDir, "library.json");
   let db = { items: [], tokens: [] };
   if (fs.existsSync(file)) db = JSON.parse(fs.readFileSync(file, "utf8"));
+  for (const item of db.items) sheyda.migrateArtwork(item);
   let write = Promise.resolve();
   function save() {
     const snapshot = JSON.stringify(db);

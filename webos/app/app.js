@@ -277,7 +277,7 @@ function render() {
         "credits",
       );
   } else if (state.route === "settings") {
-    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.54.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
+    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.56.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
       state.session?.pin || "----",
     )
       .split("")
@@ -594,9 +594,7 @@ async function play(s, e) {
   p.video.addEventListener("seeked", () => {
     if (state.player !== p) return;
     playerReady(p);
-    if (p.wantPlay) p.video.play().catch(() => {
-      if (state.player === p) playerLoading(p, "پخش ادامه پیدا نکرد؛ دوباره تلاش کنید.", true);
-    });
+
   });
   p.video.addEventListener("timeupdate", () => {
     if (state.player !== p) return;
@@ -1083,7 +1081,7 @@ function quickSeek(e, media = false) {
   else held.last = now;
   const forward = code === 417 || code === 39 || e.key === "ArrowRight",
     step = ITVRules.seekStep(now - held.start, media) * (forward ? 1 : -1);
-  if (!p.burst || p.burst.code !== code || now - p.burst.last > 1500)
+  if (!e.repeat || !p.burst || p.burst.code !== code || now - p.burst.last > 1500)
     p.burst = {
       code,
       origin: p.video.currentTime,

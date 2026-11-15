@@ -41,18 +41,19 @@ async function preview(value, fetch=get) {
   let aggregate;
   try { aggregate=JSON.parse(match?.[1] || '').props.pageProps.aggregate; } catch { throw Error('ساختار اطلاعات فیلم‌نت قابل خواندن نیست'); }
   const v=aggregate?.video_content;
-  if(!v?.id || !v.title || !['series','movie'].includes(v.type)) throw Error('اطلاعات فیلم یا سریال فیلم‌نت پیدا نشد');
+  if(!v?.id || !v.title || !['series','movie','single_video'].includes(v.type)) throw Error('اطلاعات فیلم یا سریال فیلم‌نت پیدا نشد');
+  const isMovie=v.type!=='series';
   const episodes=[],ids=new Set(),numbers=new Set();
   function add(e,seasonNumber) {
     if(e.status && e.status!=='active')return;
     if(e.conditional_flag==='coming_soon' || e.conditional_flag==='comingsoon')return;
-    const n=Number(e.episode || (v.type==='movie'?1:0));
+    const n=Number(e.episode || (isMovie?1:0));
     if(!e.id || !Number.isInteger(n) || n<1 || !Number.isInteger(seasonNumber) || seasonNumber<1)throw Error('شماره یا شناسهٔ قسمت فیلم‌نت معتبر نیست');
     if(ids.has(e.id) || numbers.has(seasonNumber+':'+n))throw Error('قسمت تکراری در اطلاعات فیلم‌نت');
     ids.add(e.id);numbers.add(seasonNumber+':'+n);
     episodes.push({metadataEpisodeId:String(e.id),seasonNumber,displayNumber:String(n),title:plain(e.title),description:plain(e.summary),imageUrl:image(e.cover_image),duration:duration(e.duration)});
   }
-  if(v.type==='movie')add(v,1);
+  if(isMovie)add(v,1);
   else {
     const seasons=aggregate.series?.seasons || v.seasons;
     if(!Array.isArray(seasons) || !seasons.length)throw Error('فصل‌های سریال فیلم‌نت دریافت نشد');
@@ -62,7 +63,7 @@ async function preview(value, fetch=get) {
     }
   }
   if(!episodes.length || episodes.length>2000)throw Error('قسمت منتشرشدهٔ معتبری در فیلم‌نت پیدا نشد');
-  return {metadataProvider:'filmnet',metadataUrl:pageUrl,metadataSourceId:String(v.id),sourceTitle:plain(v.title),isMovie:v.type==='movie',description:plain(v.summary),year:v.year,
+  return {metadataProvider:'filmnet',metadataUrl:pageUrl,metadataSourceId:String(v.id),sourceTitle:plain(v.title),isMovie,description:plain(v.summary),year:v.year,
     genres:(v.categories||[]).filter(c=>c.type==='genre').flatMap(c=>(c.items||[]).map(i=>plain(i.title))),
     automaticPosterUrl:image(v.poster_image),automaticBackdropUrl:image(v.cover_image),
     credits:(aggregate.artists||[]).map(a=>({name:plain(a.person?.name),role:(a.roles||[]).map(plain).join('، '),imageUrl:image(a.person?.avatar_image)})).filter(a=>a.name),

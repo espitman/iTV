@@ -167,6 +167,21 @@ test("hidden-control D-pad seeks immediately and never reveals transport", () =>
   assert.equal(h.p.video.currentTime, 30);
   assert.equal(h.p.controls, false);
 });
+test("a separate seek is based on the actual playhead, not the previous burst", () => {
+  const h = harness();
+  h.p.controls = false;
+  h.get("#buffer").hidden = true;
+  h.get("#next").hidden = true;
+  const event = { key: "ArrowRight", keyCode: 39, preventDefault() {} };
+  h.handlers.keydown(event);
+  assert.equal(h.p.video.currentTime, 30);
+  h.handlers.keyup(event);
+  h.p.video.currentTime = 31;
+  h.handlers.keydown(event);
+  assert.equal(h.p.video.currentTime, 41);
+  h.handlers.keydown({ ...event, repeat: true });
+  assert.equal(h.p.video.currentTime, 51);
+});
 test("visible controls do not turn left/right on an action button into a seek", () => {
   const h = harness();
   h.get("#buffer").hidden = true;

@@ -3,8 +3,8 @@ const https=require('https');
 const {merge}=require('./filimo');
 function url(value){
  let u;try{u=new URL(value);}catch{throw Error('لینک شیدا معتبر نیست');}
- if(u.protocol!=='https:' || !['sheyda.com','www.sheyda.com'].includes(u.hostname) || u.port || u.username || u.password || !/^\/p\/[a-zA-Z0-9]+\/?$/.test(u.pathname))throw Error('لینک صفحهٔ فیلم یا سریال شیدا را وارد کنید');
- return 'https://www.sheyda.com/p/'+u.pathname.split('/')[2];
+ if(u.protocol!=='https:' || !['sheyda.com','www.sheyda.com','sheyda.tv','www.sheyda.tv'].includes(u.hostname) || u.port || u.username || u.password || !/^\/p\/[a-zA-Z0-9]+\/?$/.test(u.pathname))throw Error('لینک صفحهٔ فیلم یا سریال شیدا را وارد کنید');
+ return 'https://www.sheyda.tv/p/'+u.pathname.split('/')[2];
 }
 const programQuery=`query getProgramByUid($uid:String!){getProgramByUid(uid:$uid){status{statusCode} data{program{id uid title description summary isSolitary productionYear portraitImagePath landscapeImagePath bannerImagePath} seasons{id title} solitaryEpisode{id uid title order duration landscapeImagePath releaseStatus status} genres{name} cast{name artists{id fullName imagePath}}}}}`;
 const seasonQuery=`query getSeasonEpisodes($seasonID:String!){getSeasonEpisodes(seasonID:$seasonID){status{statusCode} data{id uid title order duration landscapeImagePath releaseStatus status seasonID summary}}}`;
@@ -21,9 +21,9 @@ function post(endpoint,query,operationName,variables,did){
 // Public anonymous device session, created through the site's normal getDid query.
 // It never uses the user's browser session, login or subscription credentials.
 async function client(){
- const response=await post('https://mikasa.sheyda.com/graphql','query getDid { getDid { statusCode message data { did } } }','getDid',{});
+ const response=await post('https://mikasa.sheyda.tv/graphql','query getDid { getDid { statusCode message data { did } } }','getDid',{});
  const did=response.data?.getDid?.data?.did;if(!did)throw Error('اتصال عمومی شیدا برقرار نشد');
- return (operation,variables)=>post('https://api.sheyda.com/query',operation==='getProgramByUid'?programQuery:seasonQuery,operation,variables,did);
+ return (operation,variables)=>post('https://api.sheyda.tv/query',operation==='getProgramByUid'?programQuery:seasonQuery,operation,variables,did);
 }
 const digits=s=>String(s||'').replace(/[۰-۹]/g,c=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(c)).replace(/[٠-٩]/g,c=>'٠١٢٣٤٥٦٧٨٩'.indexOf(c));
 function seasonNumber(title,singleSeason=false){
@@ -32,7 +32,7 @@ function seasonNumber(title,singleSeason=false){
  const ordinals=['اول','دوم','سوم','چهارم','پنجم','ششم','هفتم','هشتم','نهم','دهم','یازدهم','دوازدهم','سیزدهم','چهاردهم','پانزدهم','شانزدهم','هفدهم','هجدهم','نوزدهم','بیستم'];
  const i=ordinals.indexOf(text.replace(/^فصل\s+/,''));if(i<0){if(singleSeason)return 1;throw Error('شمارهٔ فصل شیدا قابل تشخیص نیست');}return i+1;
 }
-function image(value){try{const u=new URL(value);return u.protocol==='https:' && !u.username && !u.password?u.href:null;}catch{return null;}}
+function image(value){try{const u=new URL(value);if(u.hostname==='static-s.sheyda.com'&&!u.port)u.hostname='static-s.sheyda.tv';return u.protocol==='https:' && !u.username && !u.password?u.href:null;}catch{return null;}}
 function data(response,operation){const r=response?.data?.[operation];if(!r || r.status?.statusCode!==200 || r.data==null)throw Error('اطلاعات شیدا ناقص است');return r.data;}
 async function preview(value,fetch){
  const pageUrl=url(value),uid=pageUrl.split('/').pop(),query=fetch||await client();
@@ -59,4 +59,11 @@ async function preview(value,fetch){
  if(!episodes.length||episodes.length>2000)throw Error('قسمت منتشرشدهٔ معتبری در شیدا پیدا نشد');
  return {metadataProvider:'sheyda',metadataUrl:pageUrl,metadataSourceId:String(p.id),sourceTitle:p.title,isMovie:p.isSolitary,description:p.summary||p.description||'',year:p.productionYear,genres:(d.genres||[]).map(g=>g.name),automaticPosterUrl:image(p.portraitImagePath),automaticBackdropUrl:image(p.bannerImagePath)||image(p.landscapeImagePath),credits:(d.cast||[]).flatMap(r=>(r.artists||[]).map(a=>({name:a.fullName,role:r.name,imageUrl:image(a.imagePath)}))).filter(a=>a.name),episodes:episodes.sort((a,b)=>a.seasonNumber-b.seasonNumber||(Number(a.displayNumber)||Infinity)-(Number(b.displayNumber)||Infinity))};
 }
-module.exports={url,preview,merge};
+function migrateArtwork(item) {
+ if(item.metadataProvider!=='sheyda')return;
+ for(const key of ['automaticPosterUrl','automaticBackdropUrl'])
+  if(item[key])item[key]=image(item[key])||item[key];
+ for(const row of [...(item.episodes||[]),...(item.credits||[])])
+  if(row.imageUrl)row.imageUrl=image(row.imageUrl)||row.imageUrl;
+}
+module.exports={url,preview,merge,migrateArtwork};

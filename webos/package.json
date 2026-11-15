@@ -1,11 +1,11 @@
 {
   "name": "itv-webos",
   "private": true,
-  "version": "0.54.0",
+  "version": "0.56.0",
   "scripts": {
     "test": "node --test test/*.test.js",
     "dev": "node service/dev.js"
   },
-  "versionCode": 54,
-  "versionName": "0.54.0"
+  "versionCode": 56,
+  "versionName": "0.56.0"
 }

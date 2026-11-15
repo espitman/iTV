@@ -4,11 +4,11 @@ const response=(name,data)=>({data:{[name]:{status:{statusCode:200},data}}});
 const ep=(id,title,order,seasonID='s1')=>({id,title,order,seasonID,status:'ENABLED',releaseStatus:'RELEASED',duration:123,landscapeImagePath:'https://static-s.sheyda.com/'+id+'.jpg'});
 const query=async(name,vars)=>name==='getProgramByUid'?response(name,{program:{id:'p',title:'بامداد خمار',isSolitary:false,portraitImagePath:'https://static-s.sheyda.com/poster.jpg'},seasons:[{id:'s2',title:'فصل دوم'},{id:'s1',title:'فصل اول'}],cast:[{name:'بازیگر',artists:[{fullName:'نام',imagePath:'https://static-s.sheyda.com/actor.jpg'}]}]}):response(name,vars.seasonID==='s1'?[ep('a','قسمت ۱',2),ep('b','قسمت ۲',3),{...ep('future','قسمت ۳',4),releaseStatus:'COMING_SOON'}]:[ep('special','قسمت اسپشیال',1,'s2'),ep('c','قسمت ۱',2,'s2')]);
 test('Sheyda uses validated program links and automatic provider detection',()=>{
- assert.equal(detect('https://sheyda.com/p/abc').provider,'sheyda');assert.equal(sheyda.url('https://sheyda.com/p/abc?x=1'),'https://www.sheyda.com/p/abc');
+ assert.equal(detect('https://sheyda.com/p/abc').provider,'sheyda');assert.equal(sheyda.url('https://sheyda.com/p/abc?x=1'),'https://www.sheyda.tv/p/abc');
  for(const u of ['http://sheyda.com/p/a','https://sheyda.com.evil/p/a','https://u@sheyda.com/p/a','https://sheyda.com/e/a'])assert.throws(()=>sheyda.url(u));
 });
 test('Sheyda imports both seasons, keeps true episode numbers and distinguishes specials',async()=>{
- const m=await sheyda.preview('https://sheyda.com/p/abc',query);assert.equal(m.episodes.length,4);assert.deepEqual(m.episodes.map(e=>[e.seasonNumber,e.displayNumber]),[[1,'1'],[1,'2'],[2,'1'],[2,'0']]);assert.equal(m.episodes.at(-1).displayLabel,'قسمت اسپشیال');assert.equal(m.episodes[0].imageUrl,'https://static-s.sheyda.com/a.jpg');assert.equal(m.credits[0].name,'نام');
+ const m=await sheyda.preview('https://sheyda.com/p/abc',query);assert.equal(m.episodes.length,4);assert.deepEqual(m.episodes.map(e=>[e.seasonNumber,e.displayNumber]),[[1,'1'],[1,'2'],[2,'1'],[2,'0']]);assert.equal(m.episodes.at(-1).displayLabel,'قسمت اسپشیال');assert.equal(m.episodes[0].imageUrl,'https://static-s.sheyda.tv/a.jpg');assert.equal(m.credits[0].name,'نام');
  const old=sheyda.merge(m);Object.assign(old.episodes[0],{mediaUrl:'http://phone/a.mp4',position:65,watched:true});old.webdav={username:'u',password:'p'};const fresh=sheyda.merge(m,old);assert.equal(fresh.episodes[0].mediaUrl,'http://phone/a.mp4');assert.equal(fresh.episodes[0].position,65);assert.equal(fresh.episodes[0].sourceEpisodeId,old.episodes[0].sourceEpisodeId);assert.equal(fresh.webdav.password,'p');
  const edited=dav.normalize({title:'عنوان',isMovie:false,episodes:fresh.episodes},fresh);assert.equal(edited.episodes.at(-1).displayLabel,'قسمت اسپشیال');assert.equal(edited.episodes.at(-1).displayNumber,'0');
  assert.throws(()=>dav.normalize({title:'دستی',isMovie:false,episodes:[{seasonNumber:1,displayNumber:0,url:'http://phone/a.mp4'}]}));
@@ -26,4 +26,10 @@ test('single named season uses season one when Sheyda supplies no season number'
 });
 test('multiple unnamed seasons are rejected instead of guessing their order',async()=>{
  await assert.rejects(sheyda.preview('https://sheyda.com/p/a',async name=>response(name,{program:{id:'p',title:'عنوان',isSolitary:false},seasons:[{id:'a',title:'بخش الف'},{id:'b',title:'بخش ب'}]})),/شمارهٔ فصل/);
+});
+
+test('existing Sheyda artwork migrates without touching progress or custom artwork',()=>{
+ const item={metadataProvider:'sheyda',automaticPosterUrl:'https://static-s.sheyda.com/p.jpg',customPosterUrl:'/posters/custom.jpg',episodes:[{imageUrl:'https://static-s.sheyda.com/e.jpg',position:42}]};
+ sheyda.migrateArtwork(item);assert.equal(item.automaticPosterUrl,'https://static-s.sheyda.tv/p.jpg');assert.equal(item.episodes[0].imageUrl,'https://static-s.sheyda.tv/e.jpg');assert.equal(item.episodes[0].position,42);assert.equal(item.customPosterUrl,'/posters/custom.jpg');
+ assert.equal(detect('https://www.sheyda.tv/p/abc').provider,'sheyda');
 });
