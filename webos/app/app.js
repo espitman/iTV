@@ -277,7 +277,7 @@ function render() {
         "credits",
       );
   } else if (state.route === "settings") {
-    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.56.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
+    html += `<div class="settings-stage"><section class="settings"><div class="settings-status"><span><i></i>پنل مدیریت فعال است</span><small>iTV webOS 0.57.0</small></div><div class="settings-body"><div class="settings-fields"><label>نشانی پنل مدیریت</label><a>${esc(state.session?.url || state.base)}</a><label>کد اتصال</label><div class="pin">${fa(
       state.session?.pin || "----",
     )
       .split("")
@@ -521,6 +521,17 @@ function playerReady(p) {
     target.focus();
   }
 }
+function episodePlaybackLabel(series, episode) {
+  const title = String(episode.title || "").trim();
+  for (const name of [series.sourceTitle, series.title]) {
+    const prefix = name?.trim();
+    if (!prefix || !title.startsWith(prefix)) continue;
+    const rest = title.slice(prefix.length);
+    if (!rest || /^\s*[-–—:]\s*/.test(rest))
+      return fa(rest.replace(/^\s*[-–—:]\s*/, ""));
+  }
+  return fa(title);
+}
 async function play(s, e) {
   if (s.kind === "webdav" && !e.mediaUrl) { toast("لینک فایل این قسمت را در پنل WebDAV وارد کنید"); return; }
   if (state.player) await stop(false);
@@ -544,7 +555,8 @@ async function play(s, e) {
   };
   state.player = p;
   root.dataset.route = "player";
-  root.innerHTML = `<div class="player"><video id="video" playsinline></video><div id="seek-left" class="seek-feedback left" hidden></div><div id="seek-right" class="seek-feedback right" hidden></div><div class="loading" id="buffer" style="position:absolute;inset:0">در حال آماده‌سازی پخش…</div><button class="skip" id="skip" data-action="skip" hidden>رد کردن تیتراژ</button><div class="next" id="next" hidden></div><div class="pause-info" hidden><img src="${esc(asset(s.posterUrl))}" alt=""><div><h1>${esc(s.title)}</h1><p>${esc(e.title)}</p></div></div><div class="controls"><div class="transport-panel"><div class="timeline-labels"><span id="position" class="time">۰۰:۰۰</span><h2>${esc(fa(s.title))} — ${esc(fa(e.title))}</h2><span id="duration" class="time">۰۰:۰۰</span></div><input id="seek" type="range" min="0" max="100" value="0" aria-label="زمان پخش"><div class="transport-actions"><div class="transport-left">${iconButton("از ابتدا", "restart", "restart")}${iconButton("۱۰ ثانیه عقب", "rewind", "rewind")}${iconButton("توقف / پخش", "toggle", "pause", 'id="toggle-play"')}${iconButton("۱۰ ثانیه جلو", "forward", "forward")}${iconButton("قسمت بعد", "next", "next")}</div><div class="transport-right">${iconButton("کیفیت پخش", "quality", "quality")}${iconButton("سرعت پخش", "speed", "speed")}${iconButton("پرش به زمان", "jump", "jump")}</div></div></div></div></div>`;
+  const episodeLabel = episodePlaybackLabel(s, e);
+  root.innerHTML = `<div class="player"><video id="video" playsinline></video><div id="seek-left" class="seek-feedback left" hidden></div><div id="seek-right" class="seek-feedback right" hidden></div><div class="loading" id="buffer" style="position:absolute;inset:0">در حال آماده‌سازی پخش…</div><button class="skip" id="skip" data-action="skip" hidden>رد کردن تیتراژ</button><div class="next" id="next" hidden></div><div class="pause-info" hidden><img src="${esc(asset(s.posterUrl))}" alt=""><div><h1>${esc(s.title)}</h1>${episodeLabel ? `<p>${esc(episodeLabel)}</p>` : ""}</div></div><div class="controls"><div class="transport-panel"><div class="timeline-labels"><span id="position" class="time">۰۰:۰۰</span><h2>${esc(fa(s.title))}${episodeLabel ? ` — ${esc(episodeLabel)}` : ""}</h2><span id="duration" class="time">۰۰:۰۰</span></div><input id="seek" type="range" min="0" max="100" value="0" aria-label="زمان پخش"><div class="transport-actions"><div class="transport-left">${iconButton("از ابتدا", "restart", "restart")}${iconButton("۱۰ ثانیه عقب", "rewind", "rewind")}${iconButton("توقف / پخش", "toggle", "pause", 'id="toggle-play"')}${iconButton("۱۰ ثانیه جلو", "forward", "forward")}${iconButton("قسمت بعد", "next", "next")}</div><div class="transport-right">${iconButton("کیفیت پخش", "quality", "quality")}${iconButton("سرعت پخش", "speed", "speed")}${iconButton("پرش به زمان", "jump", "jump")}</div></div></div></div></div>`;
   p.video = document.querySelector("#video");
   let resumeApplied = false;
   p.video.addEventListener("loadedmetadata", () => {
