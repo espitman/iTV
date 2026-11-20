@@ -26,13 +26,16 @@ function normalize(body, old = {}) {
     if (keys.has(key)) throw Error("شمارهٔ قسمت در یک فصل تکراری است");
     keys.add(key);
     const previous = (old.episodes || []).find(x => x.sourceEpisodeId === e.sourceEpisodeId);
+    if (e.watched !== undefined && typeof e.watched !== "boolean") throw Error("وضعیت نامعتبر است");
+    const watched = e.watched ?? !!previous?.watched;
+    const watchedChanged = watched !== !!previous?.watched;
     const id = previous?.sourceEpisodeId || crypto.randomBytes(8).toString("hex");
     if (ids.has(id)) throw Error("شناسهٔ قسمت تکراری است");
     ids.add(id);
     return {...previous, sourceEpisodeId:id, seasonNumber, displayNumber:String(number),
       sourceOrder:index, title:String(e.title || `قسمت ${number}`).slice(0,300),
       mediaUrl:["filimo","filmnet","sheyda","namava"].includes(old.metadataProvider) && previous && !(e.url || e.mediaUrl) ? "" : mediaUrl(e.url || e.mediaUrl), sourcePresent:true,
-      position:previous?.position || 0, watched:!!previous?.watched};
+      position:watchedChanged ? 0 : previous?.position || 0, watched};
   });
   const credentials = {username:String(body.username ?? old.webdav?.username ?? ""),
     password:body.clearCredentials ? "" : String(body.password || old.webdav?.password || "")};

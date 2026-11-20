@@ -119,7 +119,7 @@
       </div>
     </section>
     <details class="manual-auth"><summary>اطلاعات ورود WebDAV <small>اگر سرور رمز دارد</small></summary><p id="manual-auth-note"></p><div class="manual-art"><label for="manual-user">نام کاربری<input id="manual-user" autocomplete="off" dir="ltr"></label><label for="manual-password">رمز عبور<input id="manual-password" type="password" autocomplete="new-password" dir="ltr"></label></div><label class="manual-check"><input id="manual-clear" type="checkbox"> حذف اطلاعات ورود ذخیره‌شده</label><p>اطلاعات ورود روی تلویزیون ذخیره می‌شود. برای ارتباط رمزگذاری‌شده از HTTPS استفاده کنید.</p></details>
-    <section class="manual-section"><div class="manual-section-heading"><div><h3>فصل‌ها و فایل‌ها</h3><p>لینک مستقیم فایل روی گوشی را وارد کنید؛ نه لینک پوشه یا صفحه.</p></div><button type="button" id="manual-add-episode">＋ افزودن قسمت</button></div><div id="manual-episodes"></div></section>
+    <section class="manual-section"><div class="manual-section-heading"><div><h3>فصل‌ها و فایل‌ها</h3><p>لینک مستقیم فایل روی گوشی را وارد کنید؛ نه لینک پوشه یا صفحه.</p></div><button type="button" id="manual-add-episode">＋ افزودن قسمت</button></div><div id="manual-seasons" role="group" aria-label="فصل‌ها"></div><div id="manual-episodes"></div></section>
   </div>
   <footer class="manual-footer"><p id="manual-msg" class="error" role="status"></p><div><button type="button" id="manual-cancel">لغو</button><button id="manual-save" class="primary" type="submit">ذخیره در کتابخانه</button></div></footer>
 </form></dialog>
@@ -137,6 +137,15 @@
 .manual-auth{border:1px solid #29404a;border-radius:12px;padding:14px;margin:0 0 4px;background:#101c23}.manual-auth summary{cursor:pointer;font-size:14px;color:#e3eef2}.manual-auth summary small{color:#829ca8;font-size:11px;margin-inline-start:8px}.manual-auth p{font-size:12px;color:#8fa5af;line-height:1.8}.manual-auth .manual-art{margin-top:14px}#manual-form .manual-check{display:flex;align-items:center;gap:8px;margin:0}#manual-clear{display:inline;width:16px;height:16px;min-height:0;margin:0;accent-color:var(--cyan)}
 .manual-section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.manual-section-heading h3{margin:0 0 6px}.manual-section-heading p{font-size:12px;color:#8fa5af;margin:0 0 12px}.manual-section-heading button{flex:none}
 .manual-episode{border:1px solid #304651;border-radius:12px;padding:16px;margin-top:14px;display:grid;grid-template-columns:76px 76px minmax(0,1fr);gap:0 14px;background:#111e25}.manual-episode .manual-url,.manual-episode .row,.manual-episode small{grid-column:1/-1}.manual-episode .row{justify-content:flex-start;margin:0;gap:8px}.manual-episode .row button{min-height:34px;font-size:12px}.manual-episode small:empty{display:none}.manual-episode small{color:#a0c4cd;line-height:1.8;margin-top:8px}.manual-footer{flex:none;padding:14px 24px;border-top:1px solid #29404a;background:#142129}.manual-footer>div{display:flex;justify-content:flex-end;gap:10px}.manual-footer p{font-size:12px;margin:0 0 10px}.manual-footer p:empty{display:none}
+#manual-seasons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+#manual-seasons:empty,.manual-episode[hidden],.manual-next-label[hidden]{display:none}
+#manual-seasons button[data-next-link],#manual-seasons button[aria-pressed="true"]{border-color:#52d2cb;color:#9ff5eb}
+#manual-form .manual-watched{display:inline-flex;align-items:center;gap:8px;margin:0;padding:6px 10px;min-height:34px;border:1px solid #344a55;border-radius:8px;background:#172329;color:#c4d5dd;cursor:pointer;white-space:nowrap}
+#manual-form .manual-watched input{flex:none;width:16px;height:16px;min-height:0;margin:0;padding:0;color-scheme:dark;accent-color:#52d2cb}
+#manual-form .manual-watched:has(input:checked){background:#193739;border-color:#4c928c;color:#b9fff0}
+.manual-episode.next-link{border-color:#5de7d8;border-inline-start-width:5px;background:#173639}
+#manual-form .next-link .mu{border-color:#5de7d8}
+.manual-next-label{grid-column:1/-1;justify-self:start;margin-bottom:10px;padding:3px 10px;border-radius:6px;background:#7cebdc;color:#102628;font-weight:700;font-size:13px}
 @media(max-width:600px){#manual-dialog{width:calc(100vw - 16px);max-height:94dvh}#manual-form{max-height:94dvh}.manual-header{padding:14px 16px}.manual-header h2{font-size:17px}.manual-body{padding:0 16px}.manual-meta{grid-template-columns:minmax(0,1fr) 110px;gap:10px}.manual-art{grid-template-columns:1fr}.manual-section-heading{align-items:flex-start}.manual-section-heading button{font-size:11px;padding:6px}.manual-episode{grid-template-columns:1fr 1fr;padding:12px;gap:0 10px}.manual-episode .manual-episode-title{grid-column:1/-1}.manual-footer{padding:12px 16px}.manual-footer>div button{flex:1;min-height:42px}}
 </style>
   <script>
@@ -506,13 +515,90 @@
     };
 
     let manualId = null, manualImported = false;
+    let manualSeason = 1;
+
+    function manualEpisodeRows() {
+      return [...$('manual-episodes').children];
+    }
+
+    function episodeSeason(row) {
+      return Number(row.querySelector('.ms').value) || 1;
+    }
+
+    function updateNextLink(rows = manualEpisodeRows()) {
+      const ordered = rows.filter(row => row.dataset.archived !== 'true').sort((a, b) =>
+        episodeSeason(a) - episodeSeason(b) ||
+        (Number(a.querySelector('.mn').value) || Infinity) - (Number(b.querySelector('.mn').value) || Infinity));
+      const lastWatched = ordered.reduce((last, row, index) =>
+        row.querySelector('.mw').checked ? index : last, -1);
+      let start = lastWatched;
+      if (start === -1) {
+        start = ordered.reduce((last, row, index) =>
+          row.querySelector('.mu').value.trim() ? index : last, -1);
+      }
+      const target = $('manual-type').value === 'series'
+        ? ordered.slice(start + 1).find(row => !row.querySelector('.mu').value.trim())
+        : null;
+      for (const row of rows) {
+        row.classList.toggle('next-link', row === target);
+        row.querySelector('.manual-next-label').hidden = row !== target;
+      }
+      for (const tab of $('manual-seasons').children) {
+        const hasNext = target && Number(tab.dataset.season) === episodeSeason(target);
+        tab.toggleAttribute('data-next-link', !!hasNext);
+        tab.textContent = 'فصل ' + digits(tab.dataset.season) + (hasNext ? ' · لینک قسمت بعدی' : '');
+      }
+      return target;
+    }
+
+    function renderManualSeasons({selectNext = false, focusTab = false} = {}) {
+      const rows = manualEpisodeRows();
+      const seasons = [...new Set(rows.map(episodeSeason))].sort((a, b) => a - b);
+      const movie = $('manual-type').value === 'movie';
+      const tabs = $('manual-seasons');
+      tabs.replaceChildren();
+      if (!movie) for (const season of seasons) {
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.dataset.season = season;
+        tab.onclick = () => {
+          manualSeason = season;
+          renderManualSeasons({focusTab:true});
+        };
+        tabs.appendChild(tab);
+      }
+      const next = updateNextLink(rows);
+      if (selectNext && next) manualSeason = episodeSeason(next);
+      if (!seasons.includes(manualSeason)) manualSeason = seasons[0] ?? 1;
+      for (const tab of tabs.children) tab.setAttribute('aria-pressed', String(Number(tab.dataset.season) === manualSeason));
+      for (const row of rows) row.hidden = !movie && episodeSeason(row) !== manualSeason;
+      if (focusTab) tabs.querySelector('[aria-pressed="true"]')?.focus();
+    }
+
     function addManualEpisode(e = {}) {
       const row = document.createElement('div');
       row.className = 'manual-episode';
       row.dataset.episode = e.sourceEpisodeId || '';
-      row.innerHTML = `<label>فصل<input class="ms" type="number" min="1" max="10000" value="${Number(e.seasonNumber)||1}" required></label><label>قسمت<input class="mn" type="number" min="${e.metadataSpecial ? 0 : 1}" max="10000" value="${e.metadataSpecial ? 0 : Number(e.displayNumber)||$('manual-episodes').children.length+1}" ${e.metadataSpecial ? 'readonly aria-label="قسمت ویژه"' : ''} required></label><label class="manual-episode-title">عنوان قسمت (اختیاری)<input class="mt" value="${escapeHtml(e.title||'')}"></label><label class="manual-url">لینک مستقیم فایل<input class="mu" dir="ltr" type="url" placeholder="http://192.168.1.20:8080/Movies/video.mp4" value="${escapeHtml(e.mediaUrl||'')}" required></label><div class="row"><button type="button" class="test">آزمون فایل</button><button type="button" class="remove danger">حذف قسمت</button></div><small class="test-result" role="status"></small>`;
+      row.dataset.archived = String(e.sourcePresent === false);
+      const season = Number(e.seasonNumber) || manualSeason;
+      const numbers = manualEpisodeRows().filter(row => episodeSeason(row) === season)
+        .map(row => Number(row.querySelector('.mn').value));
+      const nextNumber = Math.max(0, ...numbers) + 1;
+      row.innerHTML = `<span class="manual-next-label" hidden>قسمت بعدی برای افزودن لینک</span><label>فصل<input class="ms" type="number" min="1" max="10000" value="${season}" required></label><label>قسمت<input class="mn" type="number" min="${e.metadataSpecial ? 0 : 1}" max="10000" value="${e.metadataSpecial ? 0 : Number(e.displayNumber)||nextNumber}" ${e.metadataSpecial ? 'readonly aria-label="قسمت ویژه"' : ''} required></label><label class="manual-episode-title">عنوان قسمت (اختیاری)<input class="mt" value="${escapeHtml(e.title||'')}"></label><label class="manual-url">لینک مستقیم فایل<input class="mu" dir="ltr" type="url" placeholder="http://192.168.1.20:8080/Movies/video.mp4" value="${escapeHtml(e.mediaUrl||'')}" required></label><div class="row"><label class="manual-watched"><input type="checkbox" class="mw"> دیده‌شده</label><button type="button" class="test">آزمون فایل</button><button type="button" class="remove danger">حذف قسمت</button></div><small class="test-result" role="status"></small>`;
       row.querySelector('.mu').required = !manualImported;
-      row.querySelector('.remove').onclick = () => row.remove();
+      const watched = row.querySelector('.mw');
+      watched.checked = watched.defaultChecked = !!e.watched;
+      watched.onchange = () => updateNextLink();
+      row.querySelector('.mu').oninput = () => updateNextLink();
+      row.querySelector('.mn').oninput = () => updateNextLink();
+      row.querySelector('.ms').onchange = event => {
+        manualSeason = Number(event.target.value);
+        renderManualSeasons();
+      };
+      row.querySelector('.remove').onclick = () => {
+        row.remove();
+        renderManualSeasons();
+      };
       row.querySelector('.test').onclick = async () => {
         const status = row.querySelector('.test-result'), btn = row.querySelector('.test');
         status.textContent = 'در حال اتصال به گوشی…'; btn.disabled = true;
@@ -540,13 +626,20 @@
       $('manual-backdrop').placeholder = item?.automaticBackdropUrl ? 'تصویر فیلیمو خودکار انتخاب شده است' : '';
       $('manual-backdrop').value = item?.customBackdropUrl || '';
       $('manual-auth-note').textContent = item?.credentialsConfigured ? 'اطلاعات ورود ذخیره شده است. خالی گذاشتن نام کاربری و رمز، اطلاعات قبلی را نگه می‌دارد.' : 'اگر WebDAV رمز ندارد، این دو فیلد را خالی بگذارید.';
-      $('manual-msg').textContent = manualImported ? 'لینک فایل‌ها را می‌توانید به‌تدریج وارد کنید؛ قسمت‌های بدون لینک هنوز قابل پخش نیستند.' : '';
+      $('manual-msg').textContent = '';
       $('manual-episodes').innerHTML = '';
+      manualSeason = 1;
       (item?.episodes || [{}]).forEach(addManualEpisode);
+      renderManualSeasons({selectNext:true});
       $('manual-dialog').showModal();
     }
     $('manual-add').onclick=()=>openManual();
-    $('manual-add-episode').onclick=()=>addManualEpisode();
+    $('manual-type').onchange = () => renderManualSeasons();
+    $('manual-add-episode').onclick = () => {
+      addManualEpisode();
+      renderManualSeasons();
+    };
+    $('manual-form').noValidate = true;
     $('manual-close').onclick=()=>$('manual-dialog').close();
     $('manual-cancel').onclick=()=>$('manual-dialog').close();
     $('manual-dialog').addEventListener('close',()=>{$('manual-password').value='';});
@@ -562,11 +655,27 @@
     };
     $('manual-form').onsubmit=async event=>{
       event.preventDefault();
+      const invalid = [...event.currentTarget.elements].find(field => field.willValidate && !field.validity.valid);
+      if (invalid) {
+        const row = invalid.closest('.manual-episode');
+        if (row?.hidden) {
+          manualSeason = episodeSeason(row);
+          renderManualSeasons();
+        }
+        invalid.reportValidity();
+        return;
+      }
       $('manual-save').disabled=true;
       try {
-        const episodes=[...$('manual-episodes').children].map(row=>({sourceEpisodeId:row.dataset.episode,
-          seasonNumber:Number(row.querySelector('.ms').value),displayNumber:Number(row.querySelector('.mn').value),
-          title:row.querySelector('.mt').value,url:row.querySelector('.mu').value}));
+        const episodes = manualEpisodeRows().map(row => {
+          const watched = row.querySelector('.mw');
+          return {
+            sourceEpisodeId:row.dataset.episode, seasonNumber:episodeSeason(row),
+            displayNumber:Number(row.querySelector('.mn').value),
+            title:row.querySelector('.mt').value, url:row.querySelector('.mu').value,
+            ...(watched.checked !== watched.defaultChecked ? {watched:watched.checked} : {})
+          };
+        });
         await api('/api/manual'+(manualId?'/'+manualId:''),{method:manualId?'PATCH':'POST',body:JSON.stringify({
           title:$('manual-title').value,isMovie:$('manual-type').value==='movie',description:$('manual-description').value,
           posterUrl:$('manual-poster').value,backdropUrl:$('manual-backdrop').value,episodes,...manualCredentials()})});

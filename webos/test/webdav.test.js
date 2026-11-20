@@ -10,6 +10,23 @@ test('manual validation rejects duplicate numbering and non-HTTP media URLs', ()
     assert.throws(()=>dav.mediaUrl(url));
   assert.equal(dav.mediaUrl('http://phone:8080/نام فایل.mp4').includes('%'),true);
 });
+test('manual edit saves watched changes and preserves untouched progress', () => {
+  const old = {metadataProvider:'filmnet', episodes:[
+    {sourceEpisodeId:'first', watched:false, position:35},
+    {sourceEpisodeId:'second', watched:true, position:50},
+    {sourceEpisodeId:'third', watched:false, position:80}
+  ]};
+  const body = {title:'سریال', isMovie:false, episodes:[
+    {sourceEpisodeId:'first', seasonNumber:1, displayNumber:1, url:'', watched:true},
+    {sourceEpisodeId:'second', seasonNumber:1, displayNumber:2, url:'', watched:false},
+    {sourceEpisodeId:'third', seasonNumber:2, displayNumber:1, url:''}
+  ]};
+  const saved = dav.normalize(body, old);
+  assert.deepEqual(saved.episodes.map(({watched, position}) => [watched, position]),
+    [[true, 0], [false, 0], [false, 80]]);
+  body.episodes[0].watched = 'false';
+  assert.throws(() => dav.normalize(body, old), /وضعیت نامعتبر/);
+});
 test('manual library: auth, secret redaction, range streaming, edit preserves progress, delete and restart',async t=>{
   const bytes=Buffer.from('0123456789abcdef');
   let lastRange, auth;
